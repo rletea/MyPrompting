@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Web-based teleprompter application" />
+  <title>Teleprompter</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<!-- =========================================================
+     CONTROL PANEL (sidebar)
+     ========================================================= -->
+<aside id="control-panel" aria-label="Teleprompter controls">
+
+  <header class="panel-header">
+    <h1 class="app-title">📽 Teleprompter</h1>
+    <button id="btn-toggle-panel" class="icon-btn" title="Hide/Show controls" aria-label="Toggle control panel">&#9776;</button>
+  </header>
+
+  <!-- ── TEXT INPUT ─────────────────────────────────────── -->
+  <section class="panel-section" aria-labelledby="lbl-text-input">
+    <h2 id="lbl-text-input" class="section-title">Script</h2>
+
+    <textarea
+      id="script-input"
+      placeholder="Paste or type your script here…"
+      rows="8"
+      aria-label="Script text input"
+      spellcheck="true"
+    ></textarea>
+
+    <div class="file-upload-row">
+      <label for="file-input" class="btn btn-secondary" title="Load from .txt file">
+        📂 Load File
+      </label>
+      <input
+        id="file-input"
+        type="file"
+        accept=".txt,.pdf,.docx"
+        aria-label="Upload script file"
+        class="visually-hidden"
+      />
+      <span id="file-name" class="file-name-label" aria-live="polite">No file chosen</span>
+    </div>
+
+    <button id="btn-load-script" class="btn btn-primary full-width">Load Script →</button>
+    <p id="file-error" class="error-msg" role="alert" aria-live="assertive"></p>
+  </section>
+
+  <!-- ── PLAYBACK CONTROLS ──────────────────────────────── -->
+  <section class="panel-section" aria-labelledby="lbl-playback">
+    <h2 id="lbl-playback" class="section-title">Playback</h2>
+
+    <div class="playback-btns">
+      <button id="btn-play"  class="btn btn-play"  title="Play"  aria-label="Play">&#9654; Play</button>
+      <button id="btn-pause" class="btn btn-pause" title="Pause" aria-label="Pause" disabled>&#9646;&#9646; Pause</button>
+      <button id="btn-stop"  class="btn btn-stop"  title="Stop"  aria-label="Stop and reset">&#9646; Stop</button>
+    </div>
+
+    <label for="speed-slider" class="control-label">
+      Speed: <span id="speed-value">3</span>
+    </label>
+    <input
+      id="speed-slider"
+      type="range"
+      min="1"
+      max="10"
+      value="3"
+      step="1"
+      aria-label="Scroll speed"
+    />
+  </section>
+
+  <!-- ── BACKGROUND ─────────────────────────────────────── -->
+  <section class="panel-section" aria-labelledby="lbl-background">
+    <h2 id="lbl-background" class="section-title">Background</h2>
+
+    <div class="color-presets" role="group" aria-label="Preset background colors">
+      <button class="preset-color active" data-color="#000000" style="background:#000000;" title="Black" aria-label="Black background" aria-pressed="true"></button>
+      <button class="preset-color" data-color="#1a1a2e" style="background:#1a1a2e;" title="Dark blue" aria-label="Dark blue background" aria-pressed="false"></button>
+      <button class="preset-color" data-color="#0d1b0d" style="background:#0d1b0d;" title="Dark green" aria-label="Dark green background" aria-pressed="false"></button>
+      <button class="preset-color" data-color="#1c1008" style="background:#1c1008;" title="Dark brown" aria-label="Dark brown background" aria-pressed="false"></button>
+      <button class="preset-color" data-color="#ffffff" style="background:#ffffff; border: 1px solid #ccc;" title="White" aria-label="White background" aria-pressed="false"></button>
+    </div>
+
+    <div class="file-upload-row">
+      <label for="bg-image-input" class="btn btn-secondary">🖼 Upload BG Image</label>
+      <input
+        id="bg-image-input"
+        type="file"
+        accept="image/jpeg,image/png,image/gif,image/webp"
+        aria-label="Upload background image"
+        class="visually-hidden"
+      />
+      <button id="btn-clear-bg-image" class="btn btn-ghost" title="Remove background image">✕ Clear</button>
+    </div>
+    <p id="bg-image-error" class="error-msg" role="alert" aria-live="assertive"></p>
+  </section>
+
+  <!-- ── FONT & TEXT ────────────────────────────────────── -->
+  <section class="panel-section" aria-labelledby="lbl-font">
+    <h2 id="lbl-font" class="section-title">Font &amp; Text</h2>
+
+    <label for="font-family-select" class="control-label">Font Family</label>
+    <select id="font-family-select" aria-label="Font family">
+      <option value="Georgia, serif">Georgia</option>
+      <option value="'Times New Roman', Times, serif">Times New Roman</option>
+      <option value="Arial, Helvetica, sans-serif" selected>Arial</option>
+      <option value="'Trebuchet MS', sans-serif">Trebuchet MS</option>
+      <option value="Verdana, Geneva, sans-serif">Verdana</option>
+      <option value="'Courier New', Courier, monospace">Courier New</option>
+      <option value="Impact, Haettenschweiler, sans-serif">Impact</option>
+    </select>
+
+    <label for="font-size-slider" class="control-label">
+      Font Size: <span id="font-size-value">36</span>px
+    </label>
+    <input
+      id="font-size-slider"
+      type="range"
+      min="16"
+      max="96"
+      value="36"
+      step="2"
+      aria-label="Font size"
+    />
+
+    <label for="text-color-input" class="control-label">Text Color</label>
+    <input id="text-color-input" type="color" value="#ffffff" aria-label="Text color" />
+
+    <label for="line-width-slider" class="control-label">
+      Reading Width: <span id="line-width-value">80</span>%
+    </label>
+    <input
+      id="line-width-slider"
+      type="range"
+      min="40"
+      max="100"
+      value="80"
+      step="5"
+      aria-label="Reading line width"
+    />
+  </section>
+
+  <!-- ── TOGGLES ────────────────────────────────────────── -->
+  <section class="panel-section" aria-labelledby="lbl-toggles">
+    <h2 id="lbl-toggles" class="section-title">Display</h2>
+
+    <div class="toggle-row">
+      <label for="mirror-toggle" class="control-label">Mirror Mode</label>
+      <label class="switch" title="Toggle mirror mode">
+        <input id="mirror-toggle" type="checkbox" role="switch" aria-label="Mirror mode" />
+        <span class="slider-toggle"></span>
+      </label>
+    </div>
+  </section>
+
+  <!-- ── VOICE RECORDING ────────────────────────────────── -->
+  <section class="panel-section" aria-labelledby="lbl-recording">
+    <h2 id="lbl-recording" class="section-title">Voice Recording</h2>
+
+    <div class="playback-btns">
+      <button id="btn-rec-start" class="btn btn-rec" aria-label="Start recording">&#9679; Record</button>
+      <button id="btn-rec-stop"  class="btn btn-stop" aria-label="Stop recording" disabled>&#9646; Stop</button>
+    </div>
+
+    <p id="rec-status" class="rec-status" aria-live="polite"></p>
+
+    <audio id="rec-playback" controls class="audio-player hidden" aria-label="Recording playback"></audio>
+    <a id="rec-download" class="btn btn-primary full-width hidden" download="recording.webm">
+      ⬇ Download Recording
+    </a>
+
+    <p id="rec-error" class="error-msg" role="alert" aria-live="assertive"></p>
+  </section>
+
+  <!-- ── FULLSCREEN ─────────────────────────────────────── -->
+  <section class="panel-section">
+    <button id="btn-fullscreen" class="btn btn-primary full-width" aria-label="Enter fullscreen">
+      ⛶ Enter Fullscreen
+    </button>
+  </section>
+
+</aside>
+
+<!-- =========================================================
+     PROMPTER DISPLAY
+     ========================================================= -->
+<main id="prompter-container" aria-label="Teleprompter display" tabindex="0">
+  <div id="prompter-text-wrap">
+    <div id="prompter-text" aria-live="polite" aria-label="Prompter text">
+      <p class="placeholder-msg">Your script will appear here. Paste text or load a file in the panel →</p>
+    </div>
+  </div>
+</main>
+
+<!-- =========================================================
+     FULLSCREEN CONTROLS OVERLAY
+     ========================================================= -->
+<div id="fullscreen-overlay" class="hidden" role="region" aria-label="Fullscreen controls">
+  <button id="fs-btn-play"  class="fs-btn" aria-label="Play">&#9654;</button>
+  <button id="fs-btn-pause" class="fs-btn" aria-label="Pause" disabled>&#9646;&#9646;</button>
+  <button id="fs-btn-stop"  class="fs-btn" aria-label="Stop">&#9646;</button>
+  <input  id="fs-speed-slider" type="range" min="1" max="10" value="3" step="1" aria-label="Speed" class="fs-speed" />
+  <button id="btn-exit-fullscreen" class="fs-btn" aria-label="Exit fullscreen">&#10006;</button>
+</div>
+
+<script src="js/recorder.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
