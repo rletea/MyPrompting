@@ -27,6 +27,7 @@ const scriptInput      = document.getElementById('script-input');
 const fileInput        = document.getElementById('file-input');
 const fileNameLabel    = document.getElementById('file-name');
 const btnLoadScript    = document.getElementById('btn-load-script');
+const btnClearScript   = document.getElementById('btn-clear-script');
 const fileError        = document.getElementById('file-error');
 
 const btnPlay          = document.getElementById('btn-play');
@@ -70,10 +71,10 @@ let scrollRAF      = null;   // requestAnimationFrame handle
 let isPlaying      = false;
 let bgObjectUrl    = null;   // blob URL for uploaded background image
 
-/** Pixels scrolled per animation tick — derived from slider value 1–10. */
+/** Pixels scrolled per animation tick — derived from slider value (1, 1.5, 2 … 10). */
 function pixelsPerTick(sliderVal) {
-  // Non-linear: 1 → 0.3 px, 5 → 1.2 px, 10 → 3.0 px
-  return 0.3 * Math.pow(Number(sliderVal), 1.35);
+  // Linear mapping: 1x → 0.4 px/tick, each +0.5 step adds 0.2 px
+  return 0.4 + (Number(sliderVal) - 1) * 0.4;
 }
 
 /* ============================================================
@@ -169,6 +170,16 @@ btnLoadScript.addEventListener('click', () => {
   }
 });
 
+// "Clear Script" button — clears textarea, file input, prompter display, and errors
+btnClearScript.addEventListener('click', () => {
+  scriptInput.value      = '';
+  fileInput.value        = '';
+  fileNameLabel.textContent = 'No file chosen';
+  clearError(fileError);
+  stopScroll();
+  showPlaceholder();
+});
+
 // Also load immediately when file is selected (quality-of-life)
 fileInput.addEventListener('change', () => {
   if (fileInput.files[0]) {
@@ -233,7 +244,9 @@ btnStop.addEventListener('click',  stopScroll);
 
 // Speed slider — takes effect immediately because pixelsPerTick reads it live
 speedSlider.addEventListener('input', () => {
-  speedValue.textContent = speedSlider.value;
+  speedValue.textContent = Number(speedSlider.value) % 1 === 0
+    ? speedSlider.value           // e.g. "2"
+    : Number(speedSlider.value).toFixed(1);  // e.g. "1.5"
   // Keep fullscreen speed slider in sync
   fsSpeedSlider.value = speedSlider.value;
 });
@@ -409,7 +422,9 @@ fsBtnStop.addEventListener('click',  stopScroll);
 
 fsSpeedSlider.addEventListener('input', () => {
   speedSlider.value = fsSpeedSlider.value;
-  speedValue.textContent = fsSpeedSlider.value;
+  speedValue.textContent = Number(fsSpeedSlider.value) % 1 === 0
+    ? fsSpeedSlider.value
+    : Number(fsSpeedSlider.value).toFixed(1);
 });
 
 /* ============================================================

@@ -46,6 +46,7 @@
     </div>
 
     <button id="btn-load-script" class="btn btn-primary full-width">Load Script →</button>
+    <button id="btn-clear-script" class="btn btn-ghost full-width">✕ Clear Script</button>
     <p id="file-error" class="error-msg" role="alert" aria-live="assertive"></p>
   </section>
 
@@ -60,15 +61,15 @@
     </div>
 
     <label for="speed-slider" class="control-label">
-      Speed: <span id="speed-value">3</span>
+      Speed: <span id="speed-value">1</span>x
     </label>
     <input
       id="speed-slider"
       type="range"
       min="1"
       max="10"
-      value="3"
-      step="1"
+      value="1"
+      step="0.5"
       aria-label="Scroll speed"
     />
   </section>
@@ -203,7 +204,7 @@
   <button id="fs-btn-play"  class="fs-btn" aria-label="Play">&#9654;</button>
   <button id="fs-btn-pause" class="fs-btn" aria-label="Pause" disabled>&#9646;&#9646;</button>
   <button id="fs-btn-stop"  class="fs-btn" aria-label="Stop">&#9646;</button>
-  <input  id="fs-speed-slider" type="range" min="1" max="10" value="3" step="1" aria-label="Speed" class="fs-speed" />
+  <input  id="fs-speed-slider" type="range" min="1" max="10" value="1" step="0.5" aria-label="Speed" class="fs-speed" />
   <button id="btn-exit-fullscreen" class="fs-btn" aria-label="Exit fullscreen">&#10006;</button>
 </div>
 
