@@ -37,10 +37,22 @@ app.disable('x-powered-by');
 // ---------------------------------------------------------------------------
 // Static files
 // ---------------------------------------------------------------------------
+
+// HTML files: never cache so users always get the latest version after a deploy
+app.get('*.html', (_req, res, next) => {
+  res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
+  next();
+});
+
+// JS / CSS / assets: no-store in production so every deploy is picked up immediately
 app.use(
   express.static(path.join(__dirname, 'public'), {
-    // Cache static assets for 1 hour in production
-    maxAge: process.env.NODE_ENV === 'production' ? '1h' : 0,
+    maxAge: 0,
+    etag: false,
+    lastModified: false,
+    setHeaders(res) {
+      res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
+    },
   })
 );
 
