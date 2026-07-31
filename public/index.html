@@ -50,6 +50,19 @@
     <p id="file-error" class="error-msg" role="alert" aria-live="assertive"></p>
   </section>
 
+  <!-- ── DISPLAY (Mirror Mode) ─────────────────────────── -->
+  <section class="panel-section" aria-labelledby="lbl-toggles">
+    <h2 id="lbl-toggles" class="section-title">Display</h2>
+
+    <div class="toggle-row">
+      <label for="mirror-toggle" class="control-label">Mirror Mode</label>
+      <label class="switch" title="Toggle mirror mode">
+        <input id="mirror-toggle" type="checkbox" role="switch" aria-label="Mirror mode" />
+        <span class="slider-toggle"></span>
+      </label>
+    </div>
+  </section>
+
   <!-- ── PLAYBACK CONTROLS ──────────────────────────────── -->
   <section class="panel-section" aria-labelledby="lbl-playback">
     <h2 id="lbl-playback" class="section-title">Playback</h2>
@@ -72,6 +85,25 @@
       step="0.5"
       aria-label="Scroll speed"
     />
+  </section>
+
+  <!-- ── VOICE RECORDING ────────────────────────────────── -->
+  <section class="panel-section" aria-labelledby="lbl-recording">
+    <h2 id="lbl-recording" class="section-title">Voice Recording</h2>
+
+    <div class="playback-btns">
+      <button id="btn-rec-start" class="btn btn-rec" aria-label="Start recording">&#9679; Record</button>
+      <button id="btn-rec-stop"  class="btn btn-stop" aria-label="Stop recording" disabled>&#9646; Stop</button>
+    </div>
+
+    <p id="rec-status" class="rec-status" aria-live="polite"></p>
+
+    <audio id="rec-playback" controls class="audio-player hidden" aria-label="Recording playback"></audio>
+    <a id="rec-download" class="btn btn-primary full-width hidden" download="recording.webm">
+      ⬇ Download Recording
+    </a>
+
+    <p id="rec-error" class="error-msg" role="alert" aria-live="assertive"></p>
   </section>
 
   <!-- ── BACKGROUND ─────────────────────────────────────── -->
@@ -143,38 +175,6 @@
       step="5"
       aria-label="Reading line width"
     />
-  </section>
-
-  <!-- ── TOGGLES ────────────────────────────────────────── -->
-  <section class="panel-section" aria-labelledby="lbl-toggles">
-    <h2 id="lbl-toggles" class="section-title">Display</h2>
-
-    <div class="toggle-row">
-      <label for="mirror-toggle" class="control-label">Mirror Mode</label>
-      <label class="switch" title="Toggle mirror mode">
-        <input id="mirror-toggle" type="checkbox" role="switch" aria-label="Mirror mode" />
-        <span class="slider-toggle"></span>
-      </label>
-    </div>
-  </section>
-
-  <!-- ── VOICE RECORDING ────────────────────────────────── -->
-  <section class="panel-section" aria-labelledby="lbl-recording">
-    <h2 id="lbl-recording" class="section-title">Voice Recording</h2>
-
-    <div class="playback-btns">
-      <button id="btn-rec-start" class="btn btn-rec" aria-label="Start recording">&#9679; Record</button>
-      <button id="btn-rec-stop"  class="btn btn-stop" aria-label="Stop recording" disabled>&#9646; Stop</button>
-    </div>
-
-    <p id="rec-status" class="rec-status" aria-live="polite"></p>
-
-    <audio id="rec-playback" controls class="audio-player hidden" aria-label="Recording playback"></audio>
-    <a id="rec-download" class="btn btn-primary full-width hidden" download="recording.webm">
-      ⬇ Download Recording
-    </a>
-
-    <p id="rec-error" class="error-msg" role="alert" aria-live="assertive"></p>
   </section>
 
   <!-- ── FULLSCREEN ─────────────────────────────────────── -->
