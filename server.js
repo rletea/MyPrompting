@@ -77,6 +77,10 @@ app.use(
 
 app.disable('x-powered-by');
 
+// Trust Railway's reverse proxy so req.secure is set correctly,
+// which allows the session cookie's `secure` flag to work over HTTPS.
+app.set('trust proxy', 1);
+
 // ---------------------------------------------------------------------------
 // Body parsing
 // ---------------------------------------------------------------------------
@@ -101,7 +105,9 @@ app.use(
     saveUninitialized: false,
     cookie: {
       httpOnly: true,
-      secure:   process.env.NODE_ENV === 'production', // HTTPS only in prod
+      // 'auto' sets secure=true when the request came in over HTTPS
+      // (works correctly behind Railway's reverse proxy with trust proxy=1)
+      secure:   process.env.NODE_ENV === 'production' ? 'auto' : false,
       sameSite: 'lax',
       maxAge:   8 * 60 * 60 * 1000, // 8 hours
     },
@@ -125,9 +131,10 @@ function requireLogin(req, res, next) {
 // ---------------------------------------------------------------------------
 
 // Serve login page and its assets without auth
-app.use('/login.html',          express.static(path.join(__dirname, 'public', 'login.html')));
-app.use('/css/login.css',       express.static(path.join(__dirname, 'public', 'css', 'login.css')));
-app.use('/js/login.js',         express.static(path.join(__dirname, 'public', 'js', 'login.js')));
+// (use sendFile for individual files — express.static on a file path doesn't work)
+app.get('/login.html',    (_req, res) => res.sendFile(path.join(__dirname, 'public', 'login.html')));
+app.get('/css/login.css', (_req, res) => res.sendFile(path.join(__dirname, 'public', 'css', 'login.css')));
+app.get('/js/login.js',   (_req, res) => res.sendFile(path.join(__dirname, 'public', 'js', 'login.js')));
 
 // POST /api/login
 app.post('/api/login', async (req, res) => {
