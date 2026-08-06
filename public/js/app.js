@@ -74,10 +74,16 @@ let scrollRAF      = null;   // requestAnimationFrame handle
 let isPlaying      = false;
 let bgObjectUrl    = null;   // blob URL for uploaded background image
 
-/** Pixels scrolled per animation tick — derived from slider value (1, 1.5, 2 … 10). */
+/**
+ * Pixels scrolled per animation frame — derived from slider value (0, 0.5, 1 … 10).
+ *   0   → 0 px  (no movement)
+ *   1   → 1 px  (clearly visible, slow)
+ *   2   → 2 px
+ *   10  → 10 px (fast)
+ * Simple linear: px = value * 1.0 — every half-step is exactly 0.5 px.
+ */
 function pixelsPerTick(sliderVal) {
-  // Linear mapping: 1x → 0.4 px/tick, each +0.5 step adds 0.2 px
-  return 0.4 + (Number(sliderVal) - 1) * 0.4;
+  return Number(sliderVal); // 0 → 0, 0.5 → 0.5, 1 → 1, 2 → 2 … 10 → 10
 }
 
 /* ============================================================
@@ -247,9 +253,8 @@ btnStop.addEventListener('click',  stopScroll);
 
 // Speed slider — takes effect immediately because pixelsPerTick reads it live
 speedSlider.addEventListener('input', () => {
-  speedValue.textContent = Number(speedSlider.value) % 1 === 0
-    ? speedSlider.value           // e.g. "2"
-    : Number(speedSlider.value).toFixed(1);  // e.g. "1.5"
+  const v = Number(speedSlider.value);
+  speedValue.textContent = v % 1 === 0 ? String(v) : v.toFixed(1); // "0","1","1.5"…
   // Keep fullscreen speed slider in sync
   fsSpeedSlider.value = speedSlider.value;
 });

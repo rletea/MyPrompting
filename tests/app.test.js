@@ -58,24 +58,28 @@ const { mimeExtension, formatBytes, buildPermissionErrorMessage } =
    pixelsPerTick
    ============================================================ */
 describe('pixelsPerTick', () => {
-  test('returns a positive number for every valid slider value 1–10', () => {
-    for (let v = 1; v <= 10; v++) {
+  test('0 returns exactly 0 px (no movement)', () => {
+    expect(pixelsPerTick(0)).toBe(0);
+  });
+
+  test('returns a positive number for every valid slider value 0.5–10', () => {
+    for (let v = 0.5; v <= 10; v += 0.5) {
       expect(pixelsPerTick(v)).toBeGreaterThan(0);
     }
   });
 
   test('speed increases monotonically with slider value', () => {
-    for (let v = 1; v < 10; v++) {
-      expect(pixelsPerTick(v + 1)).toBeGreaterThan(pixelsPerTick(v));
+    for (let v = 0; v < 10; v += 0.5) {
+      expect(pixelsPerTick(v + 0.5)).toBeGreaterThan(pixelsPerTick(v));
     }
   });
 
-  test('minimum speed (1) is slow — less than 0.5 px per tick', () => {
-    expect(pixelsPerTick(1)).toBeLessThan(0.5);
+  test('speed at 1 is exactly 1 px per tick', () => {
+    expect(pixelsPerTick(1)).toBe(1);
   });
 
-  test('maximum speed (10) is fast — more than 2 px per tick', () => {
-    expect(pixelsPerTick(10)).toBeGreaterThan(2);
+  test('maximum speed (10) is exactly 10 px per tick', () => {
+    expect(pixelsPerTick(10)).toBe(10);
   });
 
   test('accepts string input (as read from input.value)', () => {
