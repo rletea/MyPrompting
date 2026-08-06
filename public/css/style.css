@@ -53,6 +53,44 @@ body {
   display: none;
 }
 
+/* User bar (logged-in user + logout/change-password) */
+.user-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 14px;
+  background: #0d0d0d;
+  border-bottom: 1px solid #1e1e1e;
+  font-size: 0.72rem;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.user-bar-name {
+  color: #e0a020;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.user-bar-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.user-bar-link {
+  background: transparent;
+  border: none;
+  color: #888;
+  font-size: 0.72rem;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 3px;
+  text-decoration: none;
+  transition: color 0.15s;
+  font-family: inherit;
+}
+.user-bar-link:hover { color: #fff; }
+
 /* Panel header */
 .panel-header {
   display: flex;

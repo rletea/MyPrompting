@@ -50,6 +50,9 @@ const lineWidthValue   = document.getElementById('line-width-value');
 
 const mirrorToggle     = document.getElementById('mirror-toggle');
 
+const userBarName      = document.getElementById('user-bar-name');
+const btnLogout        = document.getElementById('btn-logout');
+
 const btnFullscreen    = document.getElementById('btn-fullscreen');
 const fsOverlay        = document.getElementById('fullscreen-overlay');
 const fsBtnPlay        = document.getElementById('fs-btn-play');
@@ -502,7 +505,21 @@ function truncateFilename(name, maxLen) {
   applyTextColor(textColorInput.value);
   applyLineWidth(lineWidthSlider.value);
   setBackground('#000000', null);
+
+  // Load session user and show in the user bar
+  fetch('/api/me')
+    .then((r) => r.json())
+    .then((data) => {
+      if (data.username) userBarName.textContent = data.username;
+    })
+    .catch(() => {}); // session expired — server redirects on next navigation
 })();
+
+// ── Logout ──────────────────────────────────────────────────────────────
+btnLogout.addEventListener('click', async () => {
+  await fetch('/api/logout', { method: 'POST' });
+  window.location.href = '/login.html';
+});
 
 /* ============================================================
    MODULE EXPORT (for tests in Node.js environment)

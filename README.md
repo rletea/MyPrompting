@@ -1,8 +1,8 @@
 # 📽 Teleprompter
 
-A clean, web-based teleprompter application with scrolling speed control, voice recording, background customisation, mirror mode, and fullscreen support.
+A web-based teleprompter application with scrolling speed control, voice recording, background customisation, mirror mode, fullscreen support, and a secure login system.
 
-Built with **Node.js** (Express) on the backend and **Vanilla HTML/CSS/JavaScript** on the frontend — no frontend framework, no database.
+Built with **Node.js** (Express) on the backend and **Vanilla HTML/CSS/JavaScript** on the frontend.
 
 ---
 
@@ -10,13 +10,16 @@ Built with **Node.js** (Express) on the backend and **Vanilla HTML/CSS/JavaScrip
 
 | Feature | Details |
 |---|---|
-| **Script Input** | Paste text directly or load from a `.txt` file |
-| **Auto-scroll** | Play / Pause / Stop with real-time speed slider (1–10) |
-| **Background** | 5 preset colours + custom background image upload (JPEG, PNG, GIF, WebP) |
-| **Font Controls** | Family, size (16–96 px), colour, reading width (40–100%) |
-| **Mirror Mode** | Horizontally flips the text for reflective teleprompter glass |
+| **Login system** | Movie-style login page; bcrypt-hashed passwords; session-based auth |
+| **Change password** | Logged-in users can update their password (requires current password) |
+| **Logout** | Session destroyed; cookie cleared |
+| **Script Input** | Paste text or load a `.txt` file |
+| **Auto-scroll** | Play / Pause / Stop with real-time speed slider (1–10 in 0.5 steps) |
+| **Background** | 5 preset colours + custom background image upload |
+| **Font Controls** | Family, size (16–96 px), colour, reading width |
+| **Mirror Mode** | Horizontally flips text for reflective glass |
 | **Fullscreen** | Dedicated fullscreen view with floating overlay controls |
-| **Voice Recording** | Record microphone audio, playback in-browser, download as `.webm`/`.ogg`/`.m4a` |
+| **Voice Recording** | Record, playback, download as `.webm`/`.ogg` |
 | **Keyboard Shortcuts** | `Space` play/pause · `S` stop · `↑/↓` speed · `F` fullscreen |
 
 ---
@@ -25,16 +28,27 @@ Built with **Node.js** (Express) on the backend and **Vanilla HTML/CSS/JavaScrip
 
 ```
 Prompter/
+├── auth/
+│   └── userStore.js        ← User read/write + bcrypt verification
+├── data/
+│   └── users.json          ← Persisted user store (bcrypt hashes, never plain text)
 ├── public/
-│   ├── index.html          ← Single-page UI
+│   ├── index.html          ← Main teleprompter UI (login-protected)
+│   ├── login.html          ← Movie-style login page (public)
+│   ├── change-password.html← Change password page (login-protected)
 │   ├── css/
-│   │   └── style.css
+│   │   ├── style.css
+│   │   └── login.css
 │   └── js/
-│       ├── app.js          ← Teleprompter core logic
-│       └── recorder.js     ← MediaRecorder voice recording
+│       ├── app.js
+│       ├── recorder.js
+│       ├── login.js
+│       └── change-password.js
+├── scripts/
+│   └── seed-users.js       ← One-time seed for initial users
 ├── tests/
-│   └── app.test.js         ← Jest unit tests
-├── server.js               ← Express static server
+│   └── app.test.js
+├── server.js               ← Express server (auth routes + static serving)
 ├── package.json
 ├── .env.example
 └── README.md
@@ -42,36 +56,55 @@ Prompter/
 
 ---
 
+## User Storage
+
+Passwords are stored in `data/users.json` as **bcrypt hashes** (12 salt rounds). Plain-text passwords are never written to disk or logged.
+
+**Railway note:** Railway's ephemeral filesystem resets on re-image (not on redeploy). For true persistence across re-images, attach a Railway **Volume** mounted at `/app/data`. For most use cases (redeploys only), the file persists fine.
+
+---
+
 ## Local Setup & Run
 
 ### Prerequisites
-
-- [Node.js](https://nodejs.org/) v18 or later
-- npm v9 or later
+- Node.js v18+
+- npm v9+
 
 ### Steps
 
 ```bash
-# 1. Clone the repository (or extract the project)
-git clone <your-repo-url>
-cd Prompter
+# 1. Clone / extract the project
+git clone https://github.com/rletea/MyPrompting.git
+cd MyPrompting
 
 # 2. Install dependencies
 npm install
 
-# 3. (Optional) Copy .env.example and edit if needed
+# 3. Copy and configure environment variables
 cp .env.example .env
+# Edit .env — set SESSION_SECRET to a long random string:
+node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
 
-# 4. Start the server
+# 4. Seed initial users (run once — safe to re-run, skips existing users)
+npm run seed
+
+# 5. Start the server
 npm start
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser.
+Open [http://localhost:3000](http://localhost:3000) — you will be redirected to the login page.
 
-For development with auto-restart on file changes:
+**Initial accounts:**
 
+| Username | Password | Role |
+|---|---|---|
+| Ankor | Scrum#0726@Poker | admin |
+| Ramona | letmein | user |
+| Ancuta | nutrihabits | user |
+
+For development with auto-restart:
 ```bash
-npm run dev   # uses nodemon
+npm run dev
 ```
 
 ---
@@ -82,38 +115,39 @@ npm run dev   # uses nodemon
 npm test
 ```
 
-Tests use [Jest](https://jestjs.io/) and cover core utility functions (scroll speed calculation, filename truncation, MIME type resolution, byte formatting).
-
 ---
 
 ## Deployment: Git → Railway
 
 ### 1. Push to GitHub
-
 ```bash
-git init
 git add .
-git commit -m "Initial commit"
-git remote add origin https://github.com/<your-username>/<your-repo>.git
-git push -u origin main
+git commit -m "Your message"
+git push
 ```
 
-### 2. Create a Railway project
+### 2. Railway setup
+1. Go to [https://railway.app](https://railway.app) → **New Project → Deploy from GitHub repo**
+2. Select `rletea/MyPrompting`
+3. Railway auto-detects Node.js and runs `npm start`
 
-1. Go to [https://railway.app](https://railway.app) and sign in.
-2. Click **New Project → Deploy from GitHub repo**.
-3. Select your repository.
-4. Railway will auto-detect Node.js and run `npm start`.
+### 3. Environment variables on Railway
+In your Railway project → **Variables**, add:
 
-### 3. Environment variables (optional)
+| Variable | Value |
+|---|---|
+| `NODE_ENV` | `production` |
+| `SESSION_SECRET` | *(long random string — generate as above)* |
 
-In the Railway project dashboard → **Variables**, add any variables from `.env.example` if needed (e.g. a custom `PORT`).
+### 4. Seed users on Railway
+After first deploy, open a Railway **Shell** and run:
+```bash
+npm run seed
+```
 
-Railway automatically sets `PORT` — the server reads `process.env.PORT` so no extra config is needed.
-
-### 4. Access your live URL
-
-Railway generates a public URL (e.g. `https://your-app.up.railway.app`).
+### 5. (Recommended) Attach a Volume for user data persistence
+In Railway → your service → **Volumes** → mount at `/app/data`.
+This ensures `data/users.json` survives re-images.
 
 ---
 
@@ -121,29 +155,34 @@ Railway generates a public URL (e.g. `https://your-app.up.railway.app`).
 
 | Variable | Default | Description |
 |---|---|---|
-| `PORT` | `3000` | HTTP port the server listens on |
-| `NODE_ENV` | `development` | Set to `production` for static asset caching |
+| `PORT` | `3000` | HTTP port (Railway sets automatically) |
+| `NODE_ENV` | `development` | Set to `production` for secure cookies (HTTPS) |
+| `SESSION_SECRET` | *(none — required)* | Secret for signing session cookies |
 
 ---
 
-## Security Notes
+## Security
 
-- User script text is inserted via `textContent` / `createTextNode` — **never** `innerHTML` — preventing XSS.
-- Uploaded file content is read via the browser `FileReader` API; it never reaches the server.
-- Uploaded background images are validated by MIME type and limited to 20 MB.
-- HTTP headers are hardened with [Helmet](https://helmetjs.github.io/) (CSP, HSTS, etc.).
-- No secrets or hardcoded credentials.
+- Passwords stored as **bcrypt hashes** (12 salt rounds) — never plain text
+- `bcrypt.compare()` used for all verification — timing-safe
+- Sessions use `httpOnly`, `sameSite: lax`, `secure: true` (in production)
+- Session is regenerated on login (prevents session fixation)
+- User script text set via `textContent` only — no XSS via uploads
+- HTTP headers hardened with Helmet (CSP, HSTS, etc.)
+- No secrets hardcoded — all in environment variables
 
 ---
 
-## Browser Compatibility
+## Test Plan
 
-| Feature | Required API |
-|---|---|
-| Voice Recording | `MediaRecorder` (Chrome, Edge, Firefox, Safari 14.1+) |
-| Background image | `URL.createObjectURL` |
-| Fullscreen | `requestFullscreen` API |
-| Everything else | Broadly supported modern browsers |
+| # | Test | Expected |
+|---|---|---|
+| a | Log in with each seeded user + correct password | Redirected to teleprompter app |
+| b | Log in with wrong password | Error: "Invalid username or password." |
+| c | Inspect `data/users.json` | Passwords show as `$2b$12$…` bcrypt hashes |
+| d | Change password, log out, log in with new password | Succeeds |
+| e | Visit `/` without session | Redirected to `/login.html` |
+| f | Fullscreen button appears below Voice Recording and works | ✅ |
 
 ---
 

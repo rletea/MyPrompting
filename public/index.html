@@ -19,6 +19,15 @@
     <button id="btn-toggle-panel" class="icon-btn" title="Hide/Show controls" aria-label="Toggle control panel">&#9776;</button>
   </header>
 
+  <!-- ── USER BAR ──────────────────────────────────────── -->
+  <div class="user-bar">
+    <span id="user-bar-name" class="user-bar-name"></span>
+    <div class="user-bar-actions">
+      <a href="/change-password.html" class="user-bar-link" title="Change password">🔑 Password</a>
+      <button id="btn-logout" class="user-bar-link" title="Sign out">↩ Logout</button>
+    </div>
+  </div>
+
   <!-- ── TEXT INPUT ─────────────────────────────────────── -->
   <section class="panel-section" aria-labelledby="lbl-text-input">
     <h2 id="lbl-text-input" class="section-title">Script</h2>
@@ -106,6 +115,13 @@
     <p id="rec-error" class="error-msg" role="alert" aria-live="assertive"></p>
   </section>
 
+  <!-- ── FULLSCREEN ─────────────────────────────────────── -->
+  <section class="panel-section">
+    <button id="btn-fullscreen" class="btn btn-primary full-width" aria-label="Enter fullscreen">
+      ⛶ Enter Fullscreen
+    </button>
+  </section>
+
   <!-- ── BACKGROUND ─────────────────────────────────────── -->
   <section class="panel-section" aria-labelledby="lbl-background">
     <h2 id="lbl-background" class="section-title">Background</h2>
@@ -175,13 +191,6 @@
       step="5"
       aria-label="Reading line width"
     />
-  </section>
-
-  <!-- ── FULLSCREEN ─────────────────────────────────────── -->
-  <section class="panel-section">
-    <button id="btn-fullscreen" class="btn btn-primary full-width" aria-label="Enter fullscreen">
-      ⛶ Enter Fullscreen
-    </button>
   </section>
 
 </aside>

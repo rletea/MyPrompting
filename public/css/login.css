@@ -1,0 +1,244 @@
+/* ==========================================================================
+   login.css — "Movie / Cinema" themed login page
+   Palette: near-black bg, gold accent, dramatic spotlight
+   ========================================================================== */
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  font-family: 'Georgia', 'Times New Roman', serif;
+  background: #0a0a0a;
+  color: #e8e0d0;
+  overflow: hidden;
+}
+
+/* ── Cinematic background ─────────────────────────────────────────────── */
+.cinema-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  background:
+    radial-gradient(ellipse 60% 80% at 50% 0%,
+      rgba(180, 140, 30, 0.12) 0%,
+      transparent 70%),
+    linear-gradient(180deg, #0a0a0a 0%, #0f0c07 50%, #0a0a0a 100%);
+}
+
+/* Spotlight cone from top */
+.spotlight {
+  position: absolute;
+  top: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 600px;
+  height: 500px;
+  background: conic-gradient(
+    from 260deg at 50% 0%,
+    transparent 0deg,
+    rgba(220, 175, 50, 0.07) 20deg,
+    rgba(220, 175, 50, 0.13) 30deg,
+    rgba(220, 175, 50, 0.07) 40deg,
+    transparent 60deg
+  );
+  pointer-events: none;
+}
+
+/* Film-strip side columns */
+.film-strip {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 52px;
+  background-color: #111;
+  background-image:
+    repeating-linear-gradient(
+      180deg,
+      transparent 0px,
+      transparent 20px,
+      #1a1a1a 20px,
+      #1a1a1a 24px,
+      transparent 24px,
+      transparent 36px,
+      #0d0d0d 36px,
+      #0d0d0d 40px
+    );
+}
+.film-strip::before,
+.film-strip::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 10px;
+  background: repeating-linear-gradient(
+    180deg,
+    transparent  0px,  transparent  8px,
+    #222         8px,  #222         20px,
+    transparent 20px,  transparent 28px,
+    #222        28px,  #222        40px
+  );
+}
+.film-strip--left  { left: 0; }
+.film-strip--left::before  { right: 4px; }
+.film-strip--left::after   { display: none; }
+.film-strip--right { right: 0; }
+.film-strip--right::before { left: 4px; }
+.film-strip--right::after  { display: none; }
+
+/* ── Stage layout ─────────────────────────────────────────────────────── */
+.login-stage {
+  position: relative;
+  z-index: 1;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px 70px; /* clear of film strips */
+}
+
+/* ── Login card ───────────────────────────────────────────────────────── */
+.login-card {
+  background: rgba(12, 10, 6, 0.92);
+  border: 1px solid rgba(200, 160, 40, 0.3);
+  border-radius: 6px;
+  padding: 40px 44px 36px;
+  width: 100%;
+  max-width: 400px;
+  box-shadow:
+    0 0 60px rgba(0, 0, 0, 0.8),
+    0 0 20px rgba(200, 160, 40, 0.08);
+}
+
+/* Card top / branding */
+.card-top {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.clapperboard {
+  font-size: 2.8rem;
+  display: block;
+  margin-bottom: 10px;
+  filter: drop-shadow(0 0 8px rgba(220, 175, 50, 0.4));
+}
+
+.card-title {
+  font-size: 1.7rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: #d4a930;
+  text-transform: uppercase;
+}
+
+.card-subtitle {
+  font-size: 0.8rem;
+  color: #7a7060;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-top: 4px;
+}
+
+/* ── Form fields ──────────────────────────────────────────────────────── */
+.field-group {
+  margin-bottom: 18px;
+}
+
+.field-label {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #9a8a6a;
+  margin-bottom: 6px;
+}
+
+.field-input {
+  width: 100%;
+  background: #0f0d09;
+  color: #e8e0d0;
+  border: 1px solid rgba(200, 160, 40, 0.25);
+  border-radius: 3px;
+  padding: 10px 14px;
+  font-size: 0.95rem;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.field-input::placeholder { color: #3a3228; }
+.field-input:focus {
+  border-color: rgba(200, 160, 40, 0.7);
+  box-shadow: 0 0 0 2px rgba(200, 160, 40, 0.12);
+}
+
+/* Password wrapper (input + eye button) */
+.password-wrap {
+  position: relative;
+}
+.password-wrap .field-input {
+  padding-right: 42px;
+}
+.btn-eye {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #5a5040;
+  font-size: 1rem;
+  padding: 2px 4px;
+  transition: color 0.15s;
+  line-height: 1;
+}
+.btn-eye:hover { color: #d4a930; }
+
+/* ── Error message ────────────────────────────────────────────────────── */
+.error-msg {
+  min-height: 1.2em;
+  font-size: 0.8rem;
+  color: #e05050;
+  margin-bottom: 14px;
+  letter-spacing: 0.02em;
+}
+
+/* ── Submit button ────────────────────────────────────────────────────── */
+.btn-submit {
+  width: 100%;
+  padding: 12px;
+  background: #c8991e;
+  color: #0a0807;
+  border: none;
+  border-radius: 3px;
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.15s, opacity 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.btn-submit:hover:not(:disabled) { background: #e0ab22; }
+.btn-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ── Spinner ──────────────────────────────────────────────────────────── */
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(0, 0, 0, 0.3);
+  border-top-color: #0a0807;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  display: inline-block;
+}
+.hidden { display: none !important; }
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
