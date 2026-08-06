@@ -7,6 +7,7 @@ const helmet       = require('helmet');
 const session      = require('express-session');
 const path         = require('path');
 const fs           = require('fs');
+const bcrypt       = require('bcryptjs');
 
 const { verifyPassword, changePassword } = require('./auth/userStore');
 
@@ -14,13 +15,43 @@ const app  = express();
 const PORT = process.env.PORT || 3000;
 
 // ---------------------------------------------------------------------------
-// Ensure data/ directory and users.json exist at startup
-// (Railway: seed runs separately; this guards against a missing file)
+// Auto-seed: runs at every startup, skips users that already exist.
+// This means no manual "npm run seed" step is required on Railway.
+// Plain-text passwords exist only here in memory during hashing — never logged.
 // ---------------------------------------------------------------------------
 const DATA_DIR   = path.join(__dirname, 'data');
 const USERS_FILE = path.join(DATA_DIR, 'users.json');
-if (!fs.existsSync(DATA_DIR))   fs.mkdirSync(DATA_DIR, { recursive: true });
-if (!fs.existsSync(USERS_FILE)) fs.writeFileSync(USERS_FILE, '[]', 'utf8');
+
+const SEED_USERS = [
+  { username: 'Ankor',  password: 'Scrum#0726@Poker', role: 'admin' },
+  { username: 'Ramona', password: 'letmein',           role: 'user'  },
+  { username: 'Ancuta', password: 'nutrihabits',       role: 'user'  },
+];
+
+async function autoSeed() {
+  if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+
+  let existing = [];
+  if (fs.existsSync(USERS_FILE)) {
+    try { existing = JSON.parse(fs.readFileSync(USERS_FILE, 'utf8')); } catch { existing = []; }
+  }
+
+  const existingNames = new Set(existing.map((u) => u.username.toLowerCase()));
+  const toAdd = [];
+
+  for (const u of SEED_USERS) {
+    if (existingNames.has(u.username.toLowerCase())) continue; // already exists
+    const hash = await bcrypt.hash(u.password, 12);
+    toAdd.push({ username: u.username, passwordHash: hash, role: u.role });
+    console.log(`[seed] Added user: ${u.username}`);
+  }
+
+  if (toAdd.length > 0) {
+    const tmp = USERS_FILE + '.tmp';
+    fs.writeFileSync(tmp, JSON.stringify([...existing, ...toAdd], null, 2), 'utf8');
+    fs.renameSync(tmp, USERS_FILE);
+  }
+}
 
 // ---------------------------------------------------------------------------
 // Security middleware
@@ -201,10 +232,17 @@ app.get('*', (req, res) => {
 });
 
 // ---------------------------------------------------------------------------
-// Start server
+// Start server — seed users first, then listen
 // ---------------------------------------------------------------------------
-app.listen(PORT, () => {
-  console.log(`Teleprompter server running on http://localhost:${PORT}`);
-});
+autoSeed()
+  .then(() => {
+    app.listen(PORT, () => {
+      console.log(`Teleprompter server running on port ${PORT}`);
+    });
+  })
+  .catch((err) => {
+    console.error('[seed] Fatal error during startup seed:', err);
+    process.exit(1);
+  });
 
 module.exports = app;
