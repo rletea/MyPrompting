@@ -98,18 +98,19 @@ if (!SESSION_SECRET) {
   );
 }
 
+const INACTIVITY_MS = 3 * 60 * 60 * 1000; // 3 hours — must match client-side
+
 app.use(
   session({
     secret:            SESSION_SECRET || 'change-me-insecure-fallback',
     resave:            false,
     saveUninitialized: false,
+    rolling:           true,   // reset cookie expiry on every response while active
     cookie: {
       httpOnly: true,
-      // 'auto' sets secure=true when the request came in over HTTPS
-      // (works correctly behind Railway's reverse proxy with trust proxy=1)
       secure:   process.env.NODE_ENV === 'production' ? 'auto' : false,
       sameSite: 'lax',
-      maxAge:   8 * 60 * 60 * 1000, // 8 hours
+      maxAge:   INACTIVITY_MS, // server-side expiry matches client 3h inactivity
     },
   })
 );

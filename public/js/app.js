@@ -522,6 +522,58 @@ btnLogout.addEventListener('click', async () => {
 });
 
 /* ============================================================
+   SESSION MANAGEMENT
+   — Tab/browser close  → logout via sendBeacon on pagehide
+   — 3h inactivity      → client-side timer + server maxAge both enforce this
+   ============================================================ */
+(function initSessionGuard() {
+  const INACTIVITY_MS   = 3 * 60 * 60 * 1000; // 3 hours
+  const CHECK_INTERVAL  = 60 * 1000;           // check every 60 s
+  const SESSION_KEY     = 'tp_tab_alive';
+  const LAST_ACTIVE_KEY = 'tp_last_active';
+
+  // ── Tab-alive flag ──────────────────────────────────────────────────
+  // sessionStorage is cleared automatically when the tab/window closes.
+  // We write to it on load so a re-opened tab starts fresh.
+  sessionStorage.setItem(SESSION_KEY, '1');
+
+  // On pagehide (tab close, browser close, navigate away) call logout.
+  // sendBeacon is non-blocking and survives page unload.
+  window.addEventListener('pagehide', (e) => {
+    // e.persisted = true means the page went into the bfcache (back/forward),
+    // not actually closed — don't log out in that case.
+    if (!e.persisted) {
+      navigator.sendBeacon('/api/logout');
+    }
+  });
+
+  // ── Inactivity timer ─────────────────────────────────────────────────
+  // Use localStorage so the timestamp survives navigations within the same
+  // session but is reset on a fresh login (we write it there too).
+  function touchActivity() {
+    localStorage.setItem(LAST_ACTIVE_KEY, Date.now().toString());
+  }
+
+  // Reset on any meaningful user interaction
+  ['mousemove', 'keydown', 'pointerdown', 'scroll', 'touchstart'].forEach((evt) => {
+    window.addEventListener(evt, touchActivity, { passive: true });
+  });
+
+  // Seed the timestamp on page load
+  touchActivity();
+
+  // Periodic check — if the last activity was > 3h ago, log out
+  setInterval(async () => {
+    const last = parseInt(localStorage.getItem(LAST_ACTIVE_KEY) || '0', 10);
+    if (Date.now() - last >= INACTIVITY_MS) {
+      clearInterval(undefined); // stop further checks
+      await fetch('/api/logout', { method: 'POST' }).catch(() => {});
+      window.location.href = '/login.html?reason=inactivity';
+    }
+  }, CHECK_INTERVAL);
+})();
+
+/* ============================================================
    MODULE EXPORT (for tests in Node.js environment)
    ============================================================ */
 if (typeof module !== 'undefined' && module.exports) {

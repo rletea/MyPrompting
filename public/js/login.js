@@ -14,6 +14,12 @@
   const btnSpinner    = document.getElementById('btn-login-spinner');
   const btnShowPwd    = document.getElementById('btn-show-password');
 
+  // Show inactivity message if redirected here after timeout
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('reason') === 'inactivity') {
+    showError('You were signed out after 3 hours of inactivity.');
+  }
+
   // Toggle password visibility
   btnShowPwd.addEventListener('click', () => {
     const isText = passwordInput.type === 'text';
