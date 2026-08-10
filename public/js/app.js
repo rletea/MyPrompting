@@ -76,6 +76,7 @@ let bgObjectUrl      = null;   // blob URL for uploaded background image
 let countdownAborted = false;  // set true to cancel an in-progress countdown
 let countdownTimer   = null;   // setTimeout handle for countdown steps
 let scrollAccum      = 0;      // fractional pixel accumulator — prevents sub-pixel stall
+let needsCountdown   = true;   // true = next Play shows 3-2-1; false = resume instantly
 
 /**
  * Pixels scrolled per animation frame — derived from slider value (0, 0.5, 1 … 10).
@@ -211,40 +212,32 @@ fileInput.addEventListener('change', () => {
    SCROLL / PLAYBACK ENGINE
    ============================================================ */
 
-/* ── Countdown helper ──────────────────────────────────────────────────
-   Shows 5 → 4 → 3 → 2 → 1 → "Start" (each for 1 s) then calls onDone.
-   If abortFlag() returns true at any step the countdown is cancelled.
+/* ── Countdown helper ────────────────────────────────────────────────────
+   Shows 3 → 2 → 1 (1 s each) then calls onDone.
    ─────────────────────────────────────────────────────────────────────── */
 function runCountdown(onDone) {
   const overlay = document.getElementById('countdown-overlay');
   const numEl   = document.getElementById('countdown-number');
-  const steps   = [5, 4, 3, 2, 1, 'Start'];
+  const steps   = [3, 2, 1];
 
   overlay.classList.remove('hidden');
-
   let i = 0;
 
   function showStep() {
-    if (countdownAborted) {
-      hideCountdown();
-      return;
-    }
+    if (countdownAborted) { hideCountdown(); return; }
 
-    const val = steps[i];
-    // Restart CSS animation by removing/re-adding the element clone trick
-    numEl.className = val === 'Start' ? 'label-start' : '';
-    numEl.textContent = val;
-    // Force animation restart
+    numEl.className   = '';
+    numEl.textContent = steps[i];
+    // Force CSS animation restart via reflow
     numEl.style.animation = 'none';
-    // eslint-disable-next-line no-unused-expressions
-    numEl.offsetWidth;   // reflow
+    numEl.offsetWidth;          // eslint-disable-line no-unused-expressions
     numEl.style.animation = '';
 
     i++;
     if (i < steps.length) {
       countdownTimer = setTimeout(showStep, 1000);
     } else {
-      // Last frame shown — wait for its animation then start
+      // After "1" wait for its animation to finish then go
       countdownTimer = setTimeout(() => {
         hideCountdown();
         if (!countdownAborted) onDone();
@@ -256,8 +249,7 @@ function runCountdown(onDone) {
 }
 
 function hideCountdown() {
-  const overlay = document.getElementById('countdown-overlay');
-  overlay.classList.add('hidden');
+  document.getElementById('countdown-overlay').classList.add('hidden');
   document.getElementById('countdown-number').textContent = '';
 }
 
@@ -271,7 +263,7 @@ function abortCountdown() {
 /* ── Scroll engine ──────────────────────────────────────────────────── */
 function beginScrolling() {
   isPlaying   = true;
-  scrollAccum = 0;   // reset accumulator on each new play
+  scrollAccum = 0;
   btnPlay.disabled    = true;
   btnPause.disabled   = false;
   fsBtnPlay.disabled  = true;
@@ -279,15 +271,12 @@ function beginScrolling() {
   updatePrompterCursor();
 
   function tick() {
-    // Accumulate fractional pixels so slow speeds (< 1 px/frame) still move.
-    // e.g. at 0.5x: 0.13 px/frame → scrolls 1 px every ~8 frames instead of never.
     scrollAccum += pixelsPerTick(speedSlider.value);
     const whole  = Math.floor(scrollAccum);
     if (whole >= 1) {
       prompterContainer.scrollTop += whole;
       scrollAccum -= whole;
     }
-
     const { scrollTop, scrollHeight, clientHeight } = prompterContainer;
     if (scrollTop + clientHeight >= scrollHeight - 2) {
       stopScroll();
@@ -298,25 +287,41 @@ function beginScrolling() {
   scrollRAF = requestAnimationFrame(tick);
 }
 
+/*
+ * startScroll — called by Play button and prompter click (when stopped).
+ *   • If needsCountdown is true  → show 3-2-1 then scroll
+ *   • If needsCountdown is false → resume instantly (coming from Pause)
+ */
 function startScroll() {
   if (isPlaying) return;
 
-  // Disable buttons during countdown so user can't double-trigger
   btnPlay.disabled    = true;
   btnPause.disabled   = true;
   fsBtnPlay.disabled  = true;
   fsBtnPause.disabled = true;
 
-  countdownAborted = false; // always reset before starting a new countdown
-  runCountdown(beginScrolling);
+  if (needsCountdown) {
+    countdownAborted = false;
+    runCountdown(() => {
+      needsCountdown = false;
+      beginScrolling();
+    });
+  } else {
+    // Resume after Pause — no countdown
+    beginScrolling();
+  }
 }
 
+/*
+ * pauseScroll — immediately pauses; does NOT trigger countdown on resume.
+ */
 function pauseScroll() {
-  // Cancel countdown if it's running
+  // If countdown is running, abort it and go back to ready state
   if (!isPlaying && countdownTimer) {
     abortCountdown();
-    btnPlay.disabled  = false;
-    btnPause.disabled = true;
+    needsCountdown = true;   // re-arm so next Play shows countdown again
+    btnPlay.disabled    = false;
+    btnPause.disabled   = true;
     fsBtnPlay.disabled  = false;
     fsBtnPause.disabled = true;
     updatePrompterCursor();
@@ -325,22 +330,27 @@ function pauseScroll() {
   if (!isPlaying) return;
   isPlaying = false;
   cancelAnimationFrame(scrollRAF);
-  scrollRAF = null;
-  btnPlay.disabled  = false;
-  btnPause.disabled = true;
+  scrollRAF      = null;
+  needsCountdown = false;   // resume will be instant — no countdown
+  btnPlay.disabled    = false;
+  btnPause.disabled   = true;
   fsBtnPlay.disabled  = false;
   fsBtnPause.disabled = true;
   updatePrompterCursor();
 }
 
+/*
+ * stopScroll — resets to top and re-arms the countdown for the next Play.
+ */
 function stopScroll() {
   abortCountdown();
   isPlaying = false;
   cancelAnimationFrame(scrollRAF);
   scrollRAF = null;
   prompterContainer.scrollTop = 0;
-  btnPlay.disabled  = false;
-  btnPause.disabled = true;
+  needsCountdown = true;    // next Play must show countdown
+  btnPlay.disabled    = false;
+  btnPause.disabled   = true;
   fsBtnPlay.disabled  = false;
   fsBtnPause.disabled = true;
   updatePrompterCursor();
