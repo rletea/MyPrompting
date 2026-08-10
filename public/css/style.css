@@ -566,24 +566,170 @@ input[type="color"] {
 #control-panel::-webkit-scrollbar-thumb { background: #2a2a2a; border-radius: 2px; }
 
 /* ==========================================================================
-   Responsive — hide panel on small screens, show toggle only
+   MOBILE — portrait phones (≤ 600 px wide OR portrait orientation)
+   Layout: body becomes a column.
+     Top:    prompter display  (fills ~55 vh)
+     Bottom: control panel     (fills the rest, slides up as a bottom sheet)
+   A floating ☰ button is always visible to toggle the panel.
    ========================================================================== */
-@media (max-width: 600px) {
-  #control-panel {
-    position: fixed;
-    top: 0;
-    left: 0;
-    bottom: 0;
-    z-index: 100;
-    transform: translateX(-100%);
-    transition: transform 0.25s ease;
-    width: 280px;
-    max-width: 85vw;
+
+/* ── Shared mobile trigger: narrow screen OR portrait orientation ── */
+@media (max-width: 600px), (orientation: portrait) and (max-width: 1024px) {
+
+  /* Stack vertically instead of side by side */
+  body {
+    flex-direction: column;
+    overflow: hidden;
   }
-  #control-panel.mobile-open {
-    transform: translateX(0);
-  }
+
+  /* ── Prompter takes the top portion ───────────────────────────── */
   #prompter-container {
     width: 100vw;
+    flex: 0 0 auto;
+    height: 55vh;
+    min-height: 180px;
   }
+
+  /* ── Control panel: fixed bottom sheet ────────────────────────── */
+  #control-panel {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    top: auto;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    max-height: 80vh;         /* never covers the whole screen */
+    border-right: none;
+    border-top: 2px solid #e0a020;
+    border-radius: 16px 16px 0 0;
+    transform: translateY(100%);  /* hidden below screen */
+    transition: transform 0.3s cubic-bezier(0.32, 0, 0.15, 1);
+    z-index: 100;
+    overflow-y: auto;
+    overflow-x: hidden;
+    /* Slightly larger touch targets */
+    font-size: 14px;
+  }
+
+  #control-panel.mobile-open {
+    transform: translateY(0);
+  }
+
+  /* Keep panel-header sticky inside the sheet */
+  .panel-header {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    border-radius: 16px 16px 0 0;
+  }
+
+  /* Drag handle hint at top of sheet */
+  .panel-header::before {
+    content: '';
+    display: block;
+    width: 40px;
+    height: 4px;
+    background: #444;
+    border-radius: 2px;
+    margin: 8px auto 0;
+  }
+
+  /* ── Floating toggle button — always visible ───────────────────── */
+  #btn-toggle-panel {
+    position: fixed;
+    bottom: 16px;
+    right: 16px;
+    z-index: 200;
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: #e0a020;
+    color: #000;
+    font-size: 1.3rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.6);
+    border: none;
+    cursor: pointer;
+  }
+
+  /* Hide the in-header toggle since the FAB replaces it */
+  .panel-header .icon-btn { display: none; }
+
+  /* ── Touch-friendly controls ──────────────────────────────────── */
+  .btn {
+    min-height: 44px;
+    font-size: 0.88rem;
+  }
+
+  .playback-btns { gap: 8px; }
+
+  input[type="range"] {
+    height: 8px;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    width: 22px;
+    height: 22px;
+  }
+
+  select, .field-input {
+    font-size: 16px;   /* prevents iOS zoom-on-focus */
+    min-height: 40px;
+  }
+
+  #script-input {
+    font-size: 14px;
+    min-height: 80px;
+    max-height: 160px;
+  }
+
+  /* Compact section padding */
+  .panel-section { padding: 10px 12px 8px; }
+
+  /* Video preview fits narrow panel */
+  .vid-preview { aspect-ratio: 4 / 3; }
+
+  /* ── Backdrop when panel is open ──────────────────────────────── */
+  #mobile-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 99;
+  }
+  #mobile-backdrop.visible { display: block; }
+}
+
+/* ── Landscape on phone: restore side-by-side ─────────────────────────── */
+@media (orientation: landscape) and (max-width: 1024px) and (max-height: 500px) {
+  body { flex-direction: row; }
+
+  #prompter-container {
+    height: 100vh;
+    flex: 1;
+  }
+
+  #control-panel {
+    position: relative;
+    transform: none !important;
+    width: 260px;
+    min-width: 220px;
+    max-width: 260px;
+    max-height: 100vh;
+    border-top: none;
+    border-right: 1px solid #2a2a2a;
+    border-radius: 0;
+    top: auto;
+    left: auto;
+    right: auto;
+    bottom: auto;
+  }
+
+  /* Restore in-header toggle, hide FAB */
+  .panel-header .icon-btn { display: flex; }
+  #btn-toggle-panel.fab   { display: none; }
+  #mobile-backdrop        { display: none !important; }
 }

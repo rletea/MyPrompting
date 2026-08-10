@@ -551,13 +551,48 @@ fsSpeedSlider.addEventListener('input', () => {
 /* ============================================================
    CONTROL PANEL TOGGLE
    ============================================================ */
+const mobileBackdrop = document.getElementById('mobile-backdrop');
+
+function isMobilePortrait() {
+  // Matches the CSS media query: narrow OR portrait tablet/phone
+  return window.innerWidth <= 600 ||
+    (window.innerWidth <= 1024 && window.innerHeight > window.innerWidth);
+}
+
+function openMobilePanel() {
+  controlPanel.classList.add('mobile-open');
+  mobileBackdrop.classList.add('visible');
+  // Move FAB up so it isn't covered by the sheet
+  btnTogglePanel.style.bottom = '16px';
+}
+
+function closeMobilePanel() {
+  controlPanel.classList.remove('mobile-open');
+  mobileBackdrop.classList.remove('visible');
+}
+
 btnTogglePanel.addEventListener('click', () => {
-  const isMobile = window.innerWidth <= 600;
-  if (isMobile) {
-    controlPanel.classList.toggle('mobile-open');
+  if (isMobilePortrait()) {
+    if (controlPanel.classList.contains('mobile-open')) {
+      closeMobilePanel();
+    } else {
+      openMobilePanel();
+    }
   } else {
     controlPanel.classList.toggle('collapsed');
   }
+});
+
+// Tap backdrop → close panel
+mobileBackdrop.addEventListener('click', closeMobilePanel);
+
+// On orientation change: clean up classes that don't belong
+window.addEventListener('orientationchange', () => {
+  setTimeout(() => {
+    if (!isMobilePortrait()) {
+      closeMobilePanel();
+    }
+  }, 100); // small delay so dimensions have updated
 });
 
 /* ============================================================
