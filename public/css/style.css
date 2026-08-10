@@ -371,12 +371,18 @@ input[type="color"] {
   background: #000;
 }
 
-/* ── Audio player ────────────────────────────────────────────────────────── */
-.audio-player {
+/* ── Video preview / playback ────────────────────────────────────────────── */
+.vid-preview {
   width: 100%;
   margin-top: 8px;
   border-radius: 4px;
-  background: #1a1a1a;
+  background: #000;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  display: block;
+}
+.vid-preview.recording {
+  outline: 2px solid #cc0000;
 }
 
 /* ── Utilities ───────────────────────────────────────────────────────────── */

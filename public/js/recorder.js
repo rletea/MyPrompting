@@ -1,14 +1,18 @@
 /**
- * recorder.js — Voice recording module
+ * recorder.js — Video recording module
  *
- * Uses the MediaRecorder API to capture microphone audio.
- * Produces a Blob URL for in-browser playback and a download link.
- * No audio is sent to the server.
+ * Uses MediaRecorder + getUserMedia (video + audio) to record from the
+ * device camera. Supports:
+ *  - Camera selector (lists all available video input devices)
+ *  - Front / rear camera toggle (facingMode constraint)
+ *  - Live preview while recording
+ *  - In-browser playback and download of the recorded video
+ *  - No data sent to the server — client-side only
  *
  * Security:
- *  - Requests microphone permission only when the user clicks "Record".
- *  - Revokes old blob URLs on new recordings to prevent memory leaks.
- *  - All errors surfaced to the user via a visible status message.
+ *  - Camera/mic permission requested only on Record click
+ *  - Blob URLs revoked on new recording to prevent memory leaks
+ *  - All errors surfaced via visible status/error elements
  */
 
 'use strict';
@@ -17,29 +21,32 @@
   /* ------------------------------------------------------------------
      DOM references
      ------------------------------------------------------------------ */
-  const btnRecStart   = document.getElementById('btn-rec-start');
-  const btnRecStop    = document.getElementById('btn-rec-stop');
-  const recStatus     = document.getElementById('rec-status');
-  const recPlayback   = document.getElementById('rec-playback');
-  const recDownload   = document.getElementById('rec-download');
-  const recError      = document.getElementById('rec-error');
+  const btnRecStart     = document.getElementById('btn-rec-start');
+  const btnRecStop      = document.getElementById('btn-rec-stop');
+  const recStatus       = document.getElementById('rec-status');
+  const recPreview      = document.getElementById('rec-preview');
+  const recPlayback     = document.getElementById('rec-playback');
+  const recDownload     = document.getElementById('rec-download');
+  const recError        = document.getElementById('rec-error');
+  const cameraSelect    = document.getElementById('camera-select');
+  const facingToggle    = document.getElementById('camera-facing-toggle');
 
   /* ------------------------------------------------------------------
      State
      ------------------------------------------------------------------ */
-  let mediaRecorder   = null;
-  let audioChunks     = [];
+  let mediaRecorder    = null;
+  let videoChunks      = [];
   let recordingBlobUrl = null;
+  let activeStream     = null;   // current live stream (released on stop)
 
   /* ------------------------------------------------------------------
      Feature detection
      ------------------------------------------------------------------ */
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    showRecError('Your browser does not support audio recording.');
+    showRecError('Camera recording is not supported in this browser.');
     btnRecStart.disabled = true;
     return;
   }
-
   if (typeof MediaRecorder === 'undefined') {
     showRecError('MediaRecorder is not supported in this browser.');
     btnRecStart.disabled = true;
@@ -47,21 +54,72 @@
   }
 
   /* ------------------------------------------------------------------
-     Determine best MIME type
+     Enumerate cameras and populate the selector
+     ------------------------------------------------------------------ */
+  async function populateCameras() {
+    try {
+      // A brief permission probe so enumerateDevices returns labels
+      const probe = await navigator.mediaDevices.getUserMedia({ video: true, audio: false })
+        .catch(() => null);
+      if (probe) stopStreamTracks(probe);
+
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const cameras = devices.filter((d) => d.kind === 'videoinput');
+
+      cameraSelect.innerHTML = '';
+      if (cameras.length === 0) {
+        cameraSelect.innerHTML = '<option value="">No cameras found</option>';
+        btnRecStart.disabled = true;
+        return;
+      }
+
+      cameras.forEach((cam, idx) => {
+        const opt = document.createElement('option');
+        opt.value       = cam.deviceId;
+        opt.textContent = cam.label || `Camera ${idx + 1}`;
+        cameraSelect.appendChild(opt);
+      });
+    } catch {
+      // Permissions not yet granted — list will populate after first Record
+    }
+  }
+
+  populateCameras();
+
+  // Re-enumerate if a new device is plugged in
+  navigator.mediaDevices.addEventListener('devicechange', populateCameras);
+
+  /* ------------------------------------------------------------------
+     Build getUserMedia constraints from current UI state
+     ------------------------------------------------------------------ */
+  function buildConstraints() {
+    const deviceId  = cameraSelect.value;
+    const useRear   = facingToggle.checked;
+
+    const videoConstraint = deviceId
+      ? { deviceId: { exact: deviceId } }
+      : { facingMode: useRear ? 'environment' : 'user' };
+
+    return { video: videoConstraint, audio: true };
+  }
+
+  /* ------------------------------------------------------------------
+     Preferred video MIME types (in order of preference)
      ------------------------------------------------------------------ */
   const PREFERRED_MIME_TYPES = [
-    'audio/webm;codecs=opus',
-    'audio/webm',
-    'audio/ogg;codecs=opus',
-    'audio/ogg',
-    'audio/mp4',
+    'video/webm;codecs=vp9,opus',
+    'video/webm;codecs=vp8,opus',
+    'video/webm;codecs=h264,opus',
+    'video/webm',
+    'video/mp4;codecs=h264,aac',
+    'video/mp4',
   ];
 
   function getSupportedMimeType() {
     for (const type of PREFERRED_MIME_TYPES) {
       if (MediaRecorder.isTypeSupported(type)) return type;
     }
-    return '';   // browser picks a default
+    return '';
   }
 
   /* ------------------------------------------------------------------
@@ -69,17 +127,33 @@
      ------------------------------------------------------------------ */
   btnRecStart.addEventListener('click', async () => {
     clearRecError();
-    setRecStatus('Requesting microphone permission…');
+    setRecStatus('Requesting camera access…');
 
+    // Release any previous live stream
+    stopStreamTracks(activeStream);
+    activeStream = null;
+
+    const constraints = buildConstraints();
     let stream;
     try {
-      stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+      stream = await navigator.mediaDevices.getUserMedia(constraints);
     } catch (err) {
-      const msg = buildPermissionErrorMessage(err);
-      showRecError(msg);
+      showRecError(buildPermissionErrorMessage(err));
       setRecStatus('');
       return;
     }
+
+    // After permission granted, refresh camera list (labels now available)
+    populateCameras();
+
+    activeStream = stream;
+
+    // Show live preview
+    recPreview.srcObject = stream;
+    recPreview.classList.remove('hidden');
+    recPreview.classList.add('recording');
+    recPlayback.classList.add('hidden');
+    recDownload.classList.add('hidden');
 
     // Revoke previous recording blob
     if (recordingBlobUrl) {
@@ -87,7 +161,7 @@
       recordingBlobUrl = null;
     }
 
-    audioChunks = [];
+    videoChunks = [];
 
     const mimeType = getSupportedMimeType();
     const options  = mimeType ? { mimeType } : {};
@@ -98,36 +172,40 @@
       showRecError(`Could not start recorder: ${err.message}`);
       setRecStatus('');
       stopStreamTracks(stream);
+      recPreview.classList.add('hidden');
+      recPreview.classList.remove('recording');
       return;
     }
 
     mediaRecorder.ondataavailable = (e) => {
-      if (e.data && e.data.size > 0) {
-        audioChunks.push(e.data);
-      }
+      if (e.data && e.data.size > 0) videoChunks.push(e.data);
     };
 
     mediaRecorder.onstop = () => {
-      // Stop all microphone tracks (releases the mic indicator in the browser)
       stopStreamTracks(stream);
+      activeStream = null;
 
-      const finalMime = mediaRecorder.mimeType || mimeType || 'audio/webm';
-      const blob = new Blob(audioChunks, { type: finalMime });
-      recordingBlobUrl = URL.createObjectURL(blob);
+      // Hide live preview
+      recPreview.srcObject = null;
+      recPreview.classList.add('hidden');
+      recPreview.classList.remove('recording');
 
-      // Wire up playback
+      const finalMime      = mediaRecorder.mimeType || mimeType || 'video/webm';
+      const blob           = new Blob(videoChunks, { type: finalMime });
+      recordingBlobUrl     = URL.createObjectURL(blob);
+
+      // Show playback
       recPlayback.src = recordingBlobUrl;
       recPlayback.classList.remove('hidden');
 
-      // Wire up download — determine extension from MIME type
-      const ext = mimeExtension(finalMime);
-      recDownload.href = recordingBlobUrl;
+      // Download link
+      const ext            = mimeExtension(finalMime);
+      recDownload.href     = recordingBlobUrl;
       recDownload.download = `recording.${ext}`;
       recDownload.classList.remove('hidden');
 
       setRecStatus(`Recording saved (${formatBytes(blob.size)}). Ready to download.`);
 
-      // Reset button states
       btnRecStart.disabled = false;
       btnRecStart.classList.remove('recording');
       btnRecStop.disabled  = true;
@@ -136,19 +214,19 @@
     mediaRecorder.onerror = (e) => {
       showRecError(`Recorder error: ${e.error ? e.error.message : 'Unknown error'}`);
       setRecStatus('');
+      stopStreamTracks(stream);
+      recPreview.classList.add('hidden');
+      recPreview.classList.remove('recording');
       btnRecStart.disabled = false;
       btnRecStart.classList.remove('recording');
       btnRecStop.disabled  = true;
     };
 
-    mediaRecorder.start(250);   // collect data every 250ms
+    mediaRecorder.start(250);
 
     btnRecStart.disabled = true;
     btnRecStart.classList.add('recording');
     btnRecStop.disabled  = false;
-
-    recPlayback.classList.add('hidden');
-    recDownload.classList.add('hidden');
     setRecStatus('🔴 Recording…');
   });
 
@@ -163,72 +241,59 @@
   });
 
   /* ------------------------------------------------------------------
+     Facing toggle — re-enumerate so deviceId list stays correct
+     ------------------------------------------------------------------ */
+  facingToggle.addEventListener('change', () => {
+    // If currently recording, do nothing (can't switch mid-record)
+    if (mediaRecorder && mediaRecorder.state === 'recording') return;
+    // Clear deviceId selection so facingMode constraint is used instead
+    cameraSelect.value = '';
+  });
+
+  /* ------------------------------------------------------------------
      Helpers
      ------------------------------------------------------------------ */
-
   function stopStreamTracks(stream) {
-    if (stream && stream.getTracks) {
-      stream.getTracks().forEach((t) => t.stop());
-    }
+    if (stream && stream.getTracks) stream.getTracks().forEach((t) => t.stop());
   }
 
   function buildPermissionErrorMessage(err) {
-    if (!err) return 'Could not access the microphone.';
+    if (!err) return 'Could not access the camera.';
     switch (err.name) {
       case 'NotAllowedError':
       case 'PermissionDeniedError':
-        return 'Microphone access was denied. Please allow microphone permission in your browser settings and try again.';
+        return 'Camera access was denied. Please allow camera permission in your browser settings and try again.';
       case 'NotFoundError':
       case 'DevicesNotFoundError':
-        return 'No microphone found. Please connect a microphone and try again.';
+        return 'No camera found. Please connect a camera and try again.';
       case 'NotReadableError':
       case 'TrackStartError':
-        return 'Microphone is in use by another application. Please close other apps and try again.';
+        return 'Camera is in use by another application. Please close other apps and try again.';
       case 'OverconstrainedError':
-        return 'No microphone matched the requested constraints.';
+        return 'No camera matched the selected constraints. Try a different camera or toggle front/rear.';
       case 'AbortError':
-        return 'Microphone access was aborted.';
+        return 'Camera access was aborted.';
       default:
-        return `Microphone error: ${err.message || err.name}`;
+        return `Camera error: ${err.message || err.name}`;
     }
   }
 
-  /**
-   * Map a MIME type string to a sensible file extension.
-   * @param {string} mime
-   * @returns {string}
-   */
   function mimeExtension(mime) {
     if (!mime) return 'webm';
-    if (mime.startsWith('audio/ogg'))  return 'ogg';
-    if (mime.startsWith('audio/mp4'))  return 'm4a';
-    if (mime.startsWith('audio/mpeg')) return 'mp3';
-    if (mime.startsWith('audio/wav'))  return 'wav';
-    return 'webm';  // default / audio/webm
+    if (mime.startsWith('video/mp4'))  return 'mp4';
+    if (mime.startsWith('video/ogg'))  return 'ogv';
+    return 'webm';
   }
 
-  /**
-   * Human-readable file size.
-   * @param {number} bytes
-   * @returns {string}
-   */
   function formatBytes(bytes) {
     if (bytes < 1024)        return `${bytes} B`;
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
     return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
   }
 
-  function setRecStatus(msg) {
-    recStatus.textContent = msg;
-  }
-
-  function showRecError(msg) {
-    recError.textContent = msg;
-  }
-
-  function clearRecError() {
-    recError.textContent = '';
-  }
+  function setRecStatus(msg)  { recStatus.textContent = msg; }
+  function showRecError(msg)  { recError.textContent  = msg; }
+  function clearRecError()    { recError.textContent  = '';  }
 
   /* ------------------------------------------------------------------
      Export for unit testing
