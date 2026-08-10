@@ -408,6 +408,7 @@ input[type="color"] {
   background-repeat: no-repeat;
   scroll-behavior: auto;   /* JS controls scrolling, no CSS smooth */
   outline: none;
+  cursor: pointer;         /* click = play; JS switches to 'pause' while playing */
 }
 
 /* Fade mask top & bottom for a cinematic feel */

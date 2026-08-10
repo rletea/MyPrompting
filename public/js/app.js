@@ -207,6 +207,7 @@ function startScroll() {
   btnPause.disabled = false;
   fsBtnPlay.disabled  = true;
   fsBtnPause.disabled = false;
+  updatePrompterCursor();
 
   function tick() {
     const px = pixelsPerTick(speedSlider.value);
@@ -234,6 +235,7 @@ function pauseScroll() {
   btnPause.disabled = true;
   fsBtnPlay.disabled  = false;
   fsBtnPause.disabled = true;
+  updatePrompterCursor();
 }
 
 function stopScroll() {
@@ -245,6 +247,11 @@ function stopScroll() {
   btnPause.disabled = true;
   fsBtnPlay.disabled  = false;
   fsBtnPause.disabled = true;
+  updatePrompterCursor();
+}
+
+function updatePrompterCursor() {
+  prompterContainer.style.cursor = isPlaying ? 'pause' : 'pointer';
 }
 
 btnPlay.addEventListener('click',  startScroll);
@@ -464,23 +471,38 @@ document.addEventListener('keydown', (e) => {
       stopScroll();
       break;
     case 'ArrowUp':
+    case 'Equal':        // + (without Shift, some keyboards)
+    case 'NumpadAdd': {  // numpad +
       e.preventDefault();
-      if (Number(speedSlider.value) > 1) {
-        speedSlider.value = Number(speedSlider.value) - 1;
+      const cur = Number(speedSlider.value);
+      if (cur < 10) {
+        speedSlider.value = Math.min(10, +(cur + 0.5).toFixed(1));
         speedSlider.dispatchEvent(new Event('input'));
       }
       break;
+    }
     case 'ArrowDown':
+    case 'Minus':        // - main keyboard
+    case 'NumpadSubtract': { // numpad -
       e.preventDefault();
-      if (Number(speedSlider.value) < 10) {
-        speedSlider.value = Number(speedSlider.value) + 1;
+      const cur = Number(speedSlider.value);
+      if (cur > 0) {
+        speedSlider.value = Math.max(0, +(cur - 0.5).toFixed(1));
         speedSlider.dispatchEvent(new Event('input'));
       }
       break;
+    }
     case 'KeyF':
       isFullscreenActive() ? exitFullscreen() : enterFullscreen();
       break;
   }
+});
+
+/* ============================================================
+   CLICK-TO-PLAY / CLICK-TO-PAUSE on the prompter display
+   ============================================================ */
+prompterContainer.addEventListener('click', () => {
+  isPlaying ? pauseScroll() : startScroll();
 });
 
 /* ============================================================
