@@ -15,11 +15,13 @@
 <!-- Mobile backdrop (closes panel on tap outside) -->
 <div id="mobile-backdrop" aria-hidden="true"></div>
 
+<!-- FAB: lives outside the panel so it stays visible when panel is hidden -->
+<button id="btn-toggle-panel" class="icon-btn" title="Hide/Show controls" aria-label="Show controls">&#9776;</button>
+
 <aside id="control-panel" aria-label="Teleprompter controls">
 
   <header class="panel-header">
     <h1 class="app-title">📽 Teleprompter</h1>
-    <button id="btn-toggle-panel" class="icon-btn" title="Hide/Show controls" aria-label="Toggle control panel">&#9776;</button>
   </header>
 
   <!-- ── USER BAR ──────────────────────────────────────── -->

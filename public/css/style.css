@@ -96,13 +96,33 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 14px;
+  padding: 12px 14px 12px 14px;
   border-bottom: 1px solid #2a2a2a;
   position: sticky;
   top: 0;
   background: #111;
   z-index: 1;
 }
+
+/* Desktop/landscape: the button is positioned in normal flow above the panel.
+   We pull it into the header visually by making it the last child of the
+   panel-header flex row via CSS order — but since it's now a sibling of
+   #control-panel we use fixed positioning anchored to the panel's top-right. */
+#btn-toggle-panel {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  z-index: 20;       /* above panel content, below modals */
+  background: transparent;
+  border: none;
+  color: #aaa;
+  font-size: 1.25rem;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 4px;
+  transition: color 0.15s, background 0.15s;
+}
+#btn-toggle-panel:hover { color: #fff; }
 
 .app-title {
   font-size: 1rem;
@@ -636,12 +656,14 @@ input[type="color"] {
     margin: 8px auto 0;
   }
 
-  /* ── Floating toggle button — always visible over the prompter ─── */
+  /* ── Floating toggle button — portrait FAB style ─────────────── */
   #btn-toggle-panel {
-    position: fixed;
+    /* Override desktop position: anchor to bottom-right */
+    top: auto;
     bottom: 20px;
     right: 20px;
-    z-index: 200;
+    left: auto;
+    z-index: 300;   /* above countdown, above panel */
     width: 56px;
     height: 56px;
     border-radius: 50%;
@@ -652,14 +674,8 @@ input[type="color"] {
     align-items: center;
     justify-content: center;
     box-shadow: 0 4px 20px rgba(0,0,0,0.7);
-    border: none;
-    cursor: pointer;
-    /* Stay above countdown overlay */
-    z-index: 300;
+    padding: 0;
   }
-
-  /* Hide the in-header toggle — FAB is the only toggle in portrait */
-  .panel-header .icon-btn { display: none; }
 
   /* ── Touch-friendly controls ──────────────────────────────────── */
   .btn {
