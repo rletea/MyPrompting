@@ -75,6 +75,7 @@ let isPlaying        = false;
 let bgObjectUrl      = null;   // blob URL for uploaded background image
 let countdownAborted = false;  // set true to cancel an in-progress countdown
 let countdownTimer   = null;   // setTimeout handle for countdown steps
+let scrollAccum      = 0;      // fractional pixel accumulator — prevents sub-pixel stall
 
 /**
  * Pixels scrolled per animation frame — derived from slider value (0, 0.5, 1 … 10).
@@ -269,7 +270,8 @@ function abortCountdown() {
 
 /* ── Scroll engine ──────────────────────────────────────────────────── */
 function beginScrolling() {
-  isPlaying = true;
+  isPlaying   = true;
+  scrollAccum = 0;   // reset accumulator on each new play
   btnPlay.disabled    = true;
   btnPause.disabled   = false;
   fsBtnPlay.disabled  = true;
@@ -277,8 +279,14 @@ function beginScrolling() {
   updatePrompterCursor();
 
   function tick() {
-    const px = pixelsPerTick(speedSlider.value);
-    prompterContainer.scrollTop += px;
+    // Accumulate fractional pixels so slow speeds (< 1 px/frame) still move.
+    // e.g. at 0.5x: 0.13 px/frame → scrolls 1 px every ~8 frames instead of never.
+    scrollAccum += pixelsPerTick(speedSlider.value);
+    const whole  = Math.floor(scrollAccum);
+    if (whole >= 1) {
+      prompterContainer.scrollTop += whole;
+      scrollAccum -= whole;
+    }
 
     const { scrollTop, scrollHeight, clientHeight } = prompterContainer;
     if (scrollTop + clientHeight >= scrollHeight - 2) {
@@ -294,12 +302,12 @@ function startScroll() {
   if (isPlaying) return;
 
   // Disable buttons during countdown so user can't double-trigger
-  btnPlay.disabled  = true;
-  btnPause.disabled = true;
+  btnPlay.disabled    = true;
+  btnPause.disabled   = true;
   fsBtnPlay.disabled  = true;
   fsBtnPause.disabled = true;
 
-  countdownAborted = false;
+  countdownAborted = false; // always reset before starting a new countdown
   runCountdown(beginScrolling);
 }
 
