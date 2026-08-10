@@ -70,9 +70,11 @@ const prompterText      = document.getElementById('prompter-text');
 /* ============================================================
    State
    ============================================================ */
-let scrollRAF      = null;   // requestAnimationFrame handle
-let isPlaying      = false;
-let bgObjectUrl    = null;   // blob URL for uploaded background image
+let scrollRAF        = null;   // requestAnimationFrame handle
+let isPlaying        = false;
+let bgObjectUrl      = null;   // blob URL for uploaded background image
+let countdownAborted = false;  // set true to cancel an in-progress countdown
+let countdownTimer   = null;   // setTimeout handle for countdown steps
 
 /**
  * Pixels scrolled per animation frame — derived from slider value (0, 0.5, 1 … 10).
@@ -200,11 +202,68 @@ fileInput.addEventListener('change', () => {
    SCROLL / PLAYBACK ENGINE
    ============================================================ */
 
-function startScroll() {
-  if (isPlaying) return;
+/* ── Countdown helper ──────────────────────────────────────────────────
+   Shows 5 → 4 → 3 → 2 → 1 → "Start" (each for 1 s) then calls onDone.
+   If abortFlag() returns true at any step the countdown is cancelled.
+   ─────────────────────────────────────────────────────────────────────── */
+function runCountdown(onDone) {
+  const overlay = document.getElementById('countdown-overlay');
+  const numEl   = document.getElementById('countdown-number');
+  const steps   = [5, 4, 3, 2, 1, 'Start'];
+
+  overlay.classList.remove('hidden');
+
+  let i = 0;
+
+  function showStep() {
+    if (countdownAborted) {
+      hideCountdown();
+      return;
+    }
+
+    const val = steps[i];
+    // Restart CSS animation by removing/re-adding the element clone trick
+    numEl.className = val === 'Start' ? 'label-start' : '';
+    numEl.textContent = val;
+    // Force animation restart
+    numEl.style.animation = 'none';
+    // eslint-disable-next-line no-unused-expressions
+    numEl.offsetWidth;   // reflow
+    numEl.style.animation = '';
+
+    i++;
+    if (i < steps.length) {
+      countdownTimer = setTimeout(showStep, 1000);
+    } else {
+      // Last frame shown — wait for its animation then start
+      countdownTimer = setTimeout(() => {
+        hideCountdown();
+        if (!countdownAborted) onDone();
+      }, 900);
+    }
+  }
+
+  showStep();
+}
+
+function hideCountdown() {
+  const overlay = document.getElementById('countdown-overlay');
+  overlay.classList.add('hidden');
+  document.getElementById('countdown-number').textContent = '';
+}
+
+function abortCountdown() {
+  countdownAborted = true;
+  clearTimeout(countdownTimer);
+  countdownTimer = null;
+  hideCountdown();
+}
+
+/* ── Scroll engine ──────────────────────────────────────────────────── */
+function beginScrolling() {
   isPlaying = true;
-  btnPlay.disabled  = true;
-  btnPause.disabled = false;
+  btnPlay.disabled    = true;
+  btnPause.disabled   = false;
   fsBtnPlay.disabled  = true;
   fsBtnPause.disabled = false;
   updatePrompterCursor();
@@ -213,20 +272,40 @@ function startScroll() {
     const px = pixelsPerTick(speedSlider.value);
     prompterContainer.scrollTop += px;
 
-    // Auto-stop when reaching the bottom
     const { scrollTop, scrollHeight, clientHeight } = prompterContainer;
     if (scrollTop + clientHeight >= scrollHeight - 2) {
       stopScroll();
       return;
     }
-
     scrollRAF = requestAnimationFrame(tick);
   }
-
   scrollRAF = requestAnimationFrame(tick);
 }
 
+function startScroll() {
+  if (isPlaying) return;
+
+  // Disable buttons during countdown so user can't double-trigger
+  btnPlay.disabled  = true;
+  btnPause.disabled = true;
+  fsBtnPlay.disabled  = true;
+  fsBtnPause.disabled = true;
+
+  countdownAborted = false;
+  runCountdown(beginScrolling);
+}
+
 function pauseScroll() {
+  // Cancel countdown if it's running
+  if (!isPlaying && countdownTimer) {
+    abortCountdown();
+    btnPlay.disabled  = false;
+    btnPause.disabled = true;
+    fsBtnPlay.disabled  = false;
+    fsBtnPause.disabled = true;
+    updatePrompterCursor();
+    return;
+  }
   if (!isPlaying) return;
   isPlaying = false;
   cancelAnimationFrame(scrollRAF);
@@ -239,6 +318,7 @@ function pauseScroll() {
 }
 
 function stopScroll() {
+  abortCountdown();
   isPlaying = false;
   cancelAnimationFrame(scrollRAF);
   scrollRAF = null;

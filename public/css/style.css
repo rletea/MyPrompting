@@ -395,6 +395,50 @@ input[type="color"] {
 .hidden { display: none !important; }
 
 /* ==========================================================================
+   COUNTDOWN OVERLAY
+   ========================================================================== */
+#countdown-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  pointer-events: none;   /* don't block clicks on the prompter */
+  background: transparent;
+}
+
+#countdown-number {
+  font-size: 22vw;
+  font-weight: 900;
+  color: rgba(255, 255, 255, 0.92);
+  text-shadow:
+    0 0 40px rgba(224, 160, 32, 0.8),
+    0 0 80px rgba(224, 160, 32, 0.4);
+  line-height: 1;
+  letter-spacing: -0.02em;
+  animation: countdown-pulse 0.85s ease-out forwards;
+}
+
+@keyframes countdown-pulse {
+  0%   { transform: scale(1.4); opacity: 0; }
+  20%  { transform: scale(1.0); opacity: 1; }
+  75%  { transform: scale(1.0); opacity: 1; }
+  100% { transform: scale(0.7); opacity: 0; }
+}
+
+/* "Start" label uses a smaller, wider style */
+#countdown-number.label-start {
+  font-size: 10vw;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #e0a020;
+  text-shadow:
+    0 0 30px rgba(224, 160, 32, 1),
+    0 0 60px rgba(224, 160, 32, 0.5);
+}
+
+/* ==========================================================================
    PROMPTER DISPLAY (main area)
    ========================================================================== */
 #prompter-container {
