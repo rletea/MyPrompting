@@ -582,11 +582,11 @@ input[type="color"] {
     overflow: hidden;
   }
 
-  /* ── Prompter takes the top portion ───────────────────────────── */
+  /* ── Prompter fills the full viewport ─────────────────────────── */
   #prompter-container {
     width: 100vw;
-    flex: 0 0 auto;
-    height: 55vh;
+    flex: 1 1 auto;
+    height: 100vh;
     min-height: 180px;
   }
 
@@ -636,27 +636,29 @@ input[type="color"] {
     margin: 8px auto 0;
   }
 
-  /* ── Floating toggle button — always visible ───────────────────── */
+  /* ── Floating toggle button — always visible over the prompter ─── */
   #btn-toggle-panel {
     position: fixed;
-    bottom: 16px;
-    right: 16px;
+    bottom: 20px;
+    right: 20px;
     z-index: 200;
-    width: 52px;
-    height: 52px;
+    width: 56px;
+    height: 56px;
     border-radius: 50%;
     background: #e0a020;
     color: #000;
-    font-size: 1.3rem;
+    font-size: 1.4rem;
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.6);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.7);
     border: none;
     cursor: pointer;
+    /* Stay above countdown overlay */
+    z-index: 300;
   }
 
-  /* Hide the in-header toggle since the FAB replaces it */
+  /* Hide the in-header toggle — FAB is the only toggle in portrait */
   .panel-header .icon-btn { display: none; }
 
   /* ── Touch-friendly controls ──────────────────────────────────── */

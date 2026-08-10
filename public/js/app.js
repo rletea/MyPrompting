@@ -269,6 +269,8 @@ function beginScrolling() {
   fsBtnPlay.disabled  = true;
   fsBtnPause.disabled = false;
   updatePrompterCursor();
+  // Portrait mobile: hide controls so full prompter is visible while scrolling
+  if (isMobilePortrait()) closeMobilePanel();
 
   function tick() {
     scrollAccum += pixelsPerTick(speedSlider.value);
@@ -562,13 +564,15 @@ function isMobilePortrait() {
 function openMobilePanel() {
   controlPanel.classList.add('mobile-open');
   mobileBackdrop.classList.add('visible');
-  // Move FAB up so it isn't covered by the sheet
-  btnTogglePanel.style.bottom = '16px';
+  btnTogglePanel.textContent = '✕';
+  btnTogglePanel.setAttribute('aria-label', 'Hide controls');
 }
 
 function closeMobilePanel() {
   controlPanel.classList.remove('mobile-open');
   mobileBackdrop.classList.remove('visible');
+  btnTogglePanel.textContent = '☰';
+  btnTogglePanel.setAttribute('aria-label', 'Show controls');
 }
 
 btnTogglePanel.addEventListener('click', () => {
@@ -586,13 +590,13 @@ btnTogglePanel.addEventListener('click', () => {
 // Tap backdrop → close panel
 mobileBackdrop.addEventListener('click', closeMobilePanel);
 
-// On orientation change: clean up classes that don't belong
+// On orientation change: clean up stale mobile classes
 window.addEventListener('orientationchange', () => {
   setTimeout(() => {
     if (!isMobilePortrait()) {
       closeMobilePanel();
     }
-  }, 100); // small delay so dimensions have updated
+  }, 100);
 });
 
 /* ============================================================
