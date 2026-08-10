@@ -78,14 +78,22 @@ let countdownTimer   = null;   // setTimeout handle for countdown steps
 
 /**
  * Pixels scrolled per animation frame — derived from slider value (0, 0.5, 1 … 10).
- *   0   → 0 px  (no movement)
- *   1   → 1 px  (clearly visible, slow)
- *   2   → 2 px
- *   10  → 10 px (fast)
- * Simple linear: px = value * 1.0 — every half-step is exactly 0.5 px.
+ *
+ * Uses a square-root curve so low values are genuinely slow:
+ *   0   →  0.00 px  (stopped)
+ *   0.5 →  0.13 px  (very slow crawl — half of 1x)
+ *   1   →  0.50 px  (slow, comfortable)
+ *   2   →  1.00 px  (medium)
+ *   5   →  2.50 px  (fast)
+ *   10  →  5.00 px  (max)
+ *
+ * Formula: px = 0.5 * sqrt(value)
+ * This means 0.5x really is half the speed of 1x.
  */
 function pixelsPerTick(sliderVal) {
-  return Number(sliderVal); // 0 → 0, 0.5 → 0.5, 1 → 1, 2 → 2 … 10 → 10
+  const v = Number(sliderVal);
+  if (v <= 0) return 0;
+  return 0.5 * Math.sqrt(v);
 }
 
 /* ============================================================

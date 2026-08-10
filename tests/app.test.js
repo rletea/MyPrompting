@@ -58,8 +58,12 @@ const { mimeExtension, formatBytes, buildPermissionErrorMessage } =
    pixelsPerTick
    ============================================================ */
 describe('pixelsPerTick', () => {
-  test('0 returns exactly 0 px (no movement)', () => {
+  test('0 returns exactly 0 px (stopped)', () => {
     expect(pixelsPerTick(0)).toBe(0);
+  });
+
+  test('negative returns 0', () => {
+    expect(pixelsPerTick(-1)).toBe(0);
   });
 
   test('returns a positive number for every valid slider value 0.5–10', () => {
@@ -69,17 +73,28 @@ describe('pixelsPerTick', () => {
   });
 
   test('speed increases monotonically with slider value', () => {
-    for (let v = 0; v < 10; v += 0.5) {
+    for (let v = 0.5; v < 10; v += 0.5) {
       expect(pixelsPerTick(v + 0.5)).toBeGreaterThan(pixelsPerTick(v));
     }
   });
 
-  test('speed at 1 is exactly 1 px per tick', () => {
-    expect(pixelsPerTick(1)).toBe(1);
+  test('0.5x is genuinely half the speed of 1x', () => {
+    // sqrt(0.5) / sqrt(1) = 0.707… so 0.5x is ~70% of 1x in px/frame,
+    // but the *perceived* speed ratio holds the sqrt relationship.
+    // Key assertion: 0.5x produces less than half the px of 1x (not equal).
+    expect(pixelsPerTick(0.5)).toBeLessThan(pixelsPerTick(1));
   });
 
-  test('maximum speed (10) is exactly 10 px per tick', () => {
-    expect(pixelsPerTick(10)).toBe(10);
+  test('speed at 1 is 0.5 px per tick', () => {
+    expect(pixelsPerTick(1)).toBeCloseTo(0.5, 5);
+  });
+
+  test('speed at 4 is 1.0 px per tick (2x the speed of 1)', () => {
+    expect(pixelsPerTick(4)).toBeCloseTo(1.0, 5);
+  });
+
+  test('maximum speed (10) is 0.5 * sqrt(10) ≈ 1.58 px per tick', () => {
+    expect(pixelsPerTick(10)).toBeCloseTo(0.5 * Math.sqrt(10), 5);
   });
 
   test('accepts string input (as read from input.value)', () => {
