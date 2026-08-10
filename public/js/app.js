@@ -356,6 +356,12 @@ function stopScroll() {
   fsBtnPlay.disabled  = false;
   fsBtnPause.disabled = true;
   updatePrompterCursor();
+
+  // Stop video recording if it is currently active
+  const btnRecStop = document.getElementById('btn-rec-stop');
+  if (btnRecStop && !btnRecStop.disabled) {
+    btnRecStop.click();
+  }
 }
 
 function updatePrompterCursor() {
