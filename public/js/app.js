@@ -191,14 +191,16 @@ btnLoadScript.addEventListener('click', () => {
   }
 });
 
-// "Clear Script" button — clears textarea, file input, prompter display, and errors
+// "Clear Script" button — clears textarea, file input, prompter display, errors, and recording
 btnClearScript.addEventListener('click', () => {
-  scriptInput.value      = '';
-  fileInput.value        = '';
+  scriptInput.value         = '';
+  fileInput.value           = '';
   fileNameLabel.textContent = 'No file chosen';
   clearError(fileError);
   stopScroll();
   showPlaceholder();
+  // Also clear any active or finished video recording
+  if (typeof window._clearRecording === 'function') window._clearRecording();
 });
 
 // Also load immediately when file is selected (quality-of-life)

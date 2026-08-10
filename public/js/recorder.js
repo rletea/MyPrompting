@@ -241,6 +241,14 @@
   });
 
   /* ------------------------------------------------------------------
+     Auto-clear after download
+     ------------------------------------------------------------------ */
+  recDownload.addEventListener('click', () => {
+    // Give the browser a tick to start the download, then clear
+    setTimeout(clearRecording, 500);
+  });
+
+  /* ------------------------------------------------------------------
      Facing toggle — re-enumerate so deviceId list stays correct
      ------------------------------------------------------------------ */
   facingToggle.addEventListener('change', () => {
@@ -294,6 +302,45 @@
   function setRecStatus(msg)  { recStatus.textContent = msg; }
   function showRecError(msg)  { recError.textContent  = msg; }
   function clearRecError()    { recError.textContent  = '';  }
+
+  /* ------------------------------------------------------------------
+     clearRecording — resets all recording UI and releases blob memory.
+     Called after download and from the Clear Script button in app.js.
+     ------------------------------------------------------------------ */
+  function clearRecording() {
+    // Stop any active stream/recording first
+    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+      mediaRecorder.stop();
+    }
+    stopStreamTracks(activeStream);
+    activeStream = null;
+
+    // Release blob URL
+    if (recordingBlobUrl) {
+      URL.revokeObjectURL(recordingBlobUrl);
+      recordingBlobUrl = null;
+    }
+
+    videoChunks = [];
+
+    // Reset UI
+    recPreview.srcObject = null;
+    recPreview.src       = '';
+    recPreview.classList.add('hidden');
+    recPreview.classList.remove('recording');
+    recPlayback.src = '';
+    recPlayback.classList.add('hidden');
+    recDownload.href     = '';
+    recDownload.classList.add('hidden');
+    btnRecStart.disabled = false;
+    btnRecStart.classList.remove('recording');
+    btnRecStop.disabled  = true;
+    setRecStatus('');
+    clearRecError();
+  }
+
+  // Expose so app.js Clear Script button can call it
+  window._clearRecording = clearRecording;
 
   /* ------------------------------------------------------------------
      Export for unit testing
