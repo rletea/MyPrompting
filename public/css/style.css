@@ -104,25 +104,28 @@ body {
   z-index: 1;
 }
 
-/* Desktop/landscape: the button is positioned in normal flow above the panel.
-   We pull it into the header visually by making it the last child of the
-   panel-header flex row via CSS order — but since it's now a sibling of
-   #control-panel we use fixed positioning anchored to the panel's top-right. */
+/* Desktop: button sits in the TOP-RIGHT of the prompter area (always visible,
+   never hidden behind the panel). Uses top-right so it works for any panel width. */
 #btn-toggle-panel {
   position: fixed;
-  top: 12px;
-  left: 12px;
-  z-index: 20;       /* above panel content, below modals */
-  background: transparent;
-  border: none;
-  color: #aaa;
-  font-size: 1.25rem;
+  top: 10px;
+  right: 10px;
+  z-index: 20;
+  background: rgba(0,0,0,0.55);
+  border: 1px solid #333;
+  color: #ccc;
+  font-size: 1.2rem;
   cursor: pointer;
-  padding: 4px 6px;
-  border-radius: 4px;
-  transition: color 0.15s, background 0.15s;
+  padding: 5px 9px;
+  border-radius: 6px;
+  transition: color 0.15s, background 0.15s, border-color 0.15s;
+  line-height: 1;
 }
-#btn-toggle-panel:hover { color: #fff; }
+#btn-toggle-panel:hover {
+  color: #fff;
+  background: rgba(224,160,32,0.25);
+  border-color: #e0a020;
+}
 
 .app-title {
   font-size: 1rem;
@@ -690,7 +693,7 @@ input[type="color"] {
 
   /* ── Floating toggle button — portrait FAB style ─────────────── */
   #btn-toggle-panel {
-    /* Override desktop position: anchor to bottom-left */
+    /* Portrait: gold circle FAB at bottom-left */
     top: auto;
     bottom: 20px;
     left: 20px;
