@@ -128,14 +128,7 @@
     <p id="rec-status" class="rec-status" aria-live="polite"></p>
     <p id="rec-error"  class="error-msg"  role="alert" aria-live="assertive"></p>
 
-    <!-- Live camera preview (shown while recording) -->
-    <video id="rec-preview"
-      class="vid-preview hidden"
-      autoplay muted playsinline
-      aria-label="Camera preview">
-    </video>
-
-    <!-- Playback of finished recording -->
+    <!-- Playback of finished recording (stays in panel) -->
     <video id="rec-playback"
       controls
       playsinline
@@ -146,6 +139,7 @@
     <a id="rec-download" class="btn btn-primary full-width hidden" download="recording.webm">
       ⬇ Download Recording
     </a>
+    <button id="btn-rec-clear" class="btn btn-ghost full-width hidden">✕ Clear Recording</button>
   </section>
 
   <!-- ── FULLSCREEN ─────────────────────────────────────── -->
@@ -232,6 +226,14 @@
      PROMPTER DISPLAY
      ========================================================= -->
 <main id="prompter-container" aria-label="Teleprompter display" tabindex="0">
+
+  <!-- PiP camera preview — floats centered at top of prompter while recording -->
+  <video id="rec-preview"
+    class="pip-preview hidden"
+    autoplay muted playsinline
+    aria-label="Camera preview">
+  </video>
+
   <div id="prompter-text-wrap">
     <div id="prompter-text" aria-live="polite" aria-label="Prompter text">
       <p class="placeholder-msg">Your script will appear here. Paste text or load a file in the panel →</p>

@@ -465,6 +465,38 @@ input[type="color"] {
 }
 
 /* ==========================================================================
+   PiP CAMERA PREVIEW (inside prompter, centered top)
+   ========================================================================== */
+.pip-preview {
+  display: block;
+  position: sticky;       /* sticks to top of the scroll container */
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: clamp(200px, 30%, 360px);
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border-radius: 0 0 10px 10px;
+  border: 2px solid rgba(224,160,32,0.6);
+  z-index: 10;
+  background: #000;
+  /* Red recording pulse on border */
+  box-shadow: 0 4px 24px rgba(0,0,0,0.7);
+}
+.pip-preview.recording {
+  border-color: #cc0000;
+  animation: pip-pulse 2s ease-in-out infinite;
+}
+@keyframes pip-pulse {
+  0%, 100% { box-shadow: 0 4px 24px rgba(0,0,0,0.7), 0 0 0 0 rgba(204,0,0,0.5); }
+  50%       { box-shadow: 0 4px 24px rgba(0,0,0,0.7), 0 0 0 6px rgba(204,0,0,0); }
+}
+/* When PiP is visible, give the text wrap breathing room */
+#prompter-container.pip-active #prompter-text-wrap {
+  padding-top: 16px;
+}
+
+/* ==========================================================================
    PROMPTER DISPLAY (main area)
    ========================================================================== */
 #prompter-container {

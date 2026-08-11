@@ -23,13 +23,15 @@
      ------------------------------------------------------------------ */
   const btnRecStart     = document.getElementById('btn-rec-start');
   const btnRecStop      = document.getElementById('btn-rec-stop');
+  const btnRecClear     = document.getElementById('btn-rec-clear');
   const recStatus       = document.getElementById('rec-status');
-  const recPreview      = document.getElementById('rec-preview');
+  const recPreview      = document.getElementById('rec-preview');       // PiP in prompter
   const recPlayback     = document.getElementById('rec-playback');
   const recDownload     = document.getElementById('rec-download');
   const recError        = document.getElementById('rec-error');
   const cameraSelect    = document.getElementById('camera-select');
   const facingToggle    = document.getElementById('camera-facing-toggle');
+  const prompterContainer = document.getElementById('prompter-container');
 
   /* ------------------------------------------------------------------
      State
@@ -148,12 +150,17 @@
 
     activeStream = stream;
 
-    // Show live preview
+    // Show PiP preview inside the prompter area
     recPreview.srcObject = stream;
     recPreview.classList.remove('hidden');
     recPreview.classList.add('recording');
+    prompterContainer.classList.add('pip-active');
     recPlayback.classList.add('hidden');
     recDownload.classList.add('hidden');
+    btnRecClear.classList.add('hidden');
+
+    // Trigger teleprompter Play (countdown + scroll)
+    if (typeof window._startScroll === 'function') window._startScroll();
 
     // Revoke previous recording blob
     if (recordingBlobUrl) {
@@ -185,10 +192,11 @@
       stopStreamTracks(stream);
       activeStream = null;
 
-      // Hide live preview
+      // Hide PiP preview
       recPreview.srcObject = null;
       recPreview.classList.add('hidden');
       recPreview.classList.remove('recording');
+      prompterContainer.classList.remove('pip-active');
 
       const finalMime      = mediaRecorder.mimeType || mimeType || 'video/webm';
       const blob           = new Blob(videoChunks, { type: finalMime });
@@ -198,11 +206,12 @@
       recPlayback.src = recordingBlobUrl;
       recPlayback.classList.remove('hidden');
 
-      // Download link
+      // Download link + Clear button
       const ext            = mimeExtension(finalMime);
       recDownload.href     = recordingBlobUrl;
       recDownload.download = `recording.${ext}`;
       recDownload.classList.remove('hidden');
+      btnRecClear.classList.remove('hidden');
 
       setRecStatus(`Recording saved (${formatBytes(blob.size)}). Ready to download.`);
 
@@ -323,21 +332,26 @@
 
     videoChunks = [];
 
-    // Reset UI
+    // Reset PiP and UI
     recPreview.srcObject = null;
     recPreview.src       = '';
     recPreview.classList.add('hidden');
     recPreview.classList.remove('recording');
+    prompterContainer.classList.remove('pip-active');
     recPlayback.src = '';
     recPlayback.classList.add('hidden');
     recDownload.href     = '';
     recDownload.classList.add('hidden');
+    btnRecClear.classList.add('hidden');
     btnRecStart.disabled = false;
     btnRecStart.classList.remove('recording');
     btnRecStop.disabled  = true;
     setRecStatus('');
     clearRecError();
   }
+
+  // Clear Recording button
+  btnRecClear.addEventListener('click', clearRecording);
 
   // Expose so app.js Clear Script button can call it
   window._clearRecording = clearRecording;
