@@ -247,6 +247,9 @@
       mediaRecorder.stop();
       setRecStatus('Processing…');
     }
+    // Also stop the teleprompter playback
+    const btnStop = document.getElementById('btn-stop');
+    if (btnStop) btnStop.click();
   });
 
   /* ------------------------------------------------------------------
