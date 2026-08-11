@@ -753,6 +753,9 @@ btnLogout.addEventListener('click', async () => {
   }, CHECK_INTERVAL);
 })();
 
+// Expose startScroll so recorder.js can trigger Play when Record is pressed
+window._startScroll = startScroll;
+
 /* ============================================================
    MODULE EXPORT (for tests in Node.js environment)
    ============================================================ */
