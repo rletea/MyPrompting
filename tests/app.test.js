@@ -128,19 +128,17 @@ describe('truncateFilename', () => {
 });
 
 /* ============================================================
-   mimeExtension
+   mimeExtension (video recorder)
    ============================================================ */
 describe('mimeExtension', () => {
   const cases = [
-    ['audio/webm;codecs=opus', 'webm'],
-    ['audio/webm',             'webm'],
-    ['audio/ogg;codecs=opus',  'ogg'],
-    ['audio/ogg',              'ogg'],
-    ['audio/mp4',              'm4a'],
-    ['audio/mpeg',             'mp3'],
-    ['audio/wav',              'wav'],
-    ['',                       'webm'],
-    [undefined,                'webm'],
+    ['video/webm;codecs=vp9,opus', 'webm'],
+    ['video/webm',                 'webm'],
+    ['video/mp4;codecs=h264,aac',  'mp4'],
+    ['video/mp4',                  'mp4'],
+    ['video/ogg',                  'ogv'],
+    ['',                           'webm'],
+    [undefined,                    'webm'],
   ];
 
   test.each(cases)('mimeExtension(%s) → %s', (mime, expected) => {
@@ -170,7 +168,7 @@ describe('formatBytes', () => {
 });
 
 /* ============================================================
-   buildPermissionErrorMessage
+   buildPermissionErrorMessage (camera)
    ============================================================ */
 describe('buildPermissionErrorMessage', () => {
   test('handles NotAllowedError', () => {
@@ -178,12 +176,12 @@ describe('buildPermissionErrorMessage', () => {
     expect(msg).toMatch(/denied/i);
   });
 
-  test('handles NotFoundError', () => {
+  test('handles NotFoundError (no camera)', () => {
     const msg = buildPermissionErrorMessage({ name: 'NotFoundError' });
-    expect(msg).toMatch(/no microphone/i);
+    expect(msg).toMatch(/no camera/i);
   });
 
-  test('handles NotReadableError (mic in use)', () => {
+  test('handles NotReadableError (camera in use)', () => {
     const msg = buildPermissionErrorMessage({ name: 'NotReadableError' });
     expect(msg).toMatch(/in use/i);
   });

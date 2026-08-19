@@ -9,8 +9,15 @@
  *  - In-browser playback and download of the recorded video
  *  - No data sent to the server — client-side only
  *
+ * Integration (Change 3):
+ *  - Recording is started/stopped by app.js Play/Stop via:
+ *      window._startRecording()  — called from startScroll() when checkbox is checked
+ *      window._stopRecording()   — called from stopScroll() when recording is active
+ *  - window._isRecordingActive() — returns true if MediaRecorder is running
+ *  - window._clearRecording()    — called by "Clear Script" in app.js
+ *
  * Security:
- *  - Camera/mic permission requested only on Record click
+ *  - Camera/mic permission requested only when Play is pressed with checkbox on
  *  - Blob URLs revoked on new recording to prevent memory leaks
  *  - All errors surfaced via visible status/error elements
  */
@@ -21,16 +28,16 @@
   /* ------------------------------------------------------------------
      DOM references
      ------------------------------------------------------------------ */
-  const btnRecStart     = document.getElementById('btn-rec-start');
-  const btnRecStop      = document.getElementById('btn-rec-stop');
-  const btnRecClear     = document.getElementById('btn-rec-clear');
-  const recStatus       = document.getElementById('rec-status');
-  const recPreview      = document.getElementById('rec-preview');       // PiP in prompter
-  const recPlayback     = document.getElementById('rec-playback');
-  const recDownload     = document.getElementById('rec-download');
-  const recError        = document.getElementById('rec-error');
-  const cameraSelect    = document.getElementById('camera-select');
-  const facingToggle    = document.getElementById('camera-facing-toggle');
+  const recEnabledToggle  = document.getElementById('rec-enabled-toggle');
+  const recSelectedStatus = document.getElementById('rec-selected-status');
+  const btnRecClear       = document.getElementById('btn-rec-clear');
+  const recStatus         = document.getElementById('rec-status');
+  const recPreview        = document.getElementById('rec-preview');       // PiP in prompter
+  const recPlayback       = document.getElementById('rec-playback');
+  const recDownload       = document.getElementById('rec-download');
+  const recError          = document.getElementById('rec-error');
+  const cameraSelect      = document.getElementById('camera-select');
+  const facingToggle      = document.getElementById('camera-facing-toggle');
   const prompterContainer = document.getElementById('prompter-container');
 
   /* ------------------------------------------------------------------
@@ -44,16 +51,23 @@
   /* ------------------------------------------------------------------
      Feature detection
      ------------------------------------------------------------------ */
-  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    showRecError('Camera recording is not supported in this browser.');
-    btnRecStart.disabled = true;
-    return;
+  const supported = navigator.mediaDevices &&
+                    navigator.mediaDevices.getUserMedia &&
+                    typeof MediaRecorder !== 'undefined';
+
+  if (!supported) {
+    showRecError('Video recording is not supported in this browser.');
+    recEnabledToggle.disabled = true;
   }
-  if (typeof MediaRecorder === 'undefined') {
-    showRecError('MediaRecorder is not supported in this browser.');
-    btnRecStart.disabled = true;
-    return;
-  }
+
+  /* ------------------------------------------------------------------
+     Recording checkbox — update status text
+     ------------------------------------------------------------------ */
+  recEnabledToggle.addEventListener('change', () => {
+    recSelectedStatus.textContent = recEnabledToggle.checked
+      ? 'Recording is selected'
+      : 'Recording is NOT selected';
+  });
 
   /* ------------------------------------------------------------------
      Enumerate cameras and populate the selector
@@ -71,7 +85,7 @@
       cameraSelect.innerHTML = '';
       if (cameras.length === 0) {
         cameraSelect.innerHTML = '<option value="">No cameras found</option>';
-        btnRecStart.disabled = true;
+        recEnabledToggle.disabled = true;
         return;
       }
 
@@ -86,7 +100,7 @@
     }
   }
 
-  populateCameras();
+  if (supported) populateCameras();
 
   // Re-enumerate if a new device is plugged in
   navigator.mediaDevices.addEventListener('devicechange', populateCameras);
@@ -125,9 +139,12 @@
   }
 
   /* ------------------------------------------------------------------
-     Start recording
+     Start recording — called by app.js startScroll() when checkbox is on
      ------------------------------------------------------------------ */
-  btnRecStart.addEventListener('click', async () => {
+  async function startRecording() {
+    if (!supported) return;
+    if (mediaRecorder && mediaRecorder.state === 'recording') return;
+
     clearRecError();
     setRecStatus('Requesting camera access…');
 
@@ -142,6 +159,9 @@
     } catch (err) {
       showRecError(buildPermissionErrorMessage(err));
       setRecStatus('');
+      // Camera failed — stop the prompter scroll too
+      const btnStop = document.getElementById('btn-stop');
+      if (btnStop) btnStop.click();
       return;
     }
 
@@ -158,9 +178,6 @@
     recPlayback.classList.add('hidden');
     recDownload.classList.add('hidden');
     btnRecClear.classList.add('hidden');
-
-    // Trigger teleprompter Play (countdown + scroll)
-    if (typeof window._startScroll === 'function') window._startScroll();
 
     // Revoke previous recording blob
     if (recordingBlobUrl) {
@@ -181,6 +198,7 @@
       stopStreamTracks(stream);
       recPreview.classList.add('hidden');
       recPreview.classList.remove('recording');
+      prompterContainer.classList.remove('pip-active');
       return;
     }
 
@@ -214,10 +232,6 @@
       btnRecClear.classList.remove('hidden');
 
       setRecStatus(`Recording saved (${formatBytes(blob.size)}). Ready to download.`);
-
-      btnRecStart.disabled = false;
-      btnRecStart.classList.remove('recording');
-      btnRecStop.disabled  = true;
     };
 
     mediaRecorder.onerror = (e) => {
@@ -226,31 +240,29 @@
       stopStreamTracks(stream);
       recPreview.classList.add('hidden');
       recPreview.classList.remove('recording');
-      btnRecStart.disabled = false;
-      btnRecStart.classList.remove('recording');
-      btnRecStop.disabled  = true;
+      prompterContainer.classList.remove('pip-active');
     };
 
     mediaRecorder.start(250);
-
-    btnRecStart.disabled = true;
-    btnRecStart.classList.add('recording');
-    btnRecStop.disabled  = false;
     setRecStatus('🔴 Recording…');
-  });
+  }
 
   /* ------------------------------------------------------------------
-     Stop recording
+     Stop recording — called by app.js stopScroll() when recording is active
      ------------------------------------------------------------------ */
-  btnRecStop.addEventListener('click', () => {
+  function stopRecording() {
     if (mediaRecorder && mediaRecorder.state !== 'inactive') {
       mediaRecorder.stop();
       setRecStatus('Processing…');
     }
-    // Also stop the teleprompter playback
-    const btnStop = document.getElementById('btn-stop');
-    if (btnStop) btnStop.click();
-  });
+  }
+
+  /* ------------------------------------------------------------------
+     Is recording active? — queried by app.js stopScroll()
+     ------------------------------------------------------------------ */
+  function isRecordingActive() {
+    return !!(mediaRecorder && mediaRecorder.state === 'recording');
+  }
 
   /* ------------------------------------------------------------------
      Auto-clear after download
@@ -346,9 +358,6 @@
     recDownload.href     = '';
     recDownload.classList.add('hidden');
     btnRecClear.classList.add('hidden');
-    btnRecStart.disabled = false;
-    btnRecStart.classList.remove('recording');
-    btnRecStop.disabled  = true;
     setRecStatus('');
     clearRecError();
   }
@@ -356,8 +365,11 @@
   // Clear Recording button
   btnRecClear.addEventListener('click', clearRecording);
 
-  // Expose so app.js Clear Script button can call it
-  window._clearRecording = clearRecording;
+  // Expose API for app.js integration
+  window._startRecording    = startRecording;
+  window._stopRecording     = stopRecording;
+  window._isRecordingActive = isRecordingActive;
+  window._clearRecording    = clearRecording;
 
   /* ------------------------------------------------------------------
      Export for unit testing

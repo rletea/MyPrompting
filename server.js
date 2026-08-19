@@ -9,7 +9,7 @@ const path         = require('path');
 const fs           = require('fs');
 const bcrypt       = require('bcryptjs');
 
-const { verifyPassword, changePassword } = require('./auth/userStore');
+const { verifyPassword, changePassword, savePreferences, getPreferences } = require('./auth/userStore');
 
 const app  = express();
 const PORT = process.env.PORT || 3000;
@@ -177,9 +177,24 @@ app.post('/api/logout', (req, res) => {
 // ---------------------------------------------------------------------------
 app.use(requireLogin);
 
-// GET /api/me — return current session user (no password)
+// GET /api/me — return current session user (no password) + preferences
 app.get('/api/me', (req, res) => {
-  res.json({ username: req.session.user.username, role: req.session.user.role });
+  const prefs = getPreferences(req.session.user.username);
+  res.json({ username: req.session.user.username, role: req.session.user.role, preferences: prefs });
+});
+
+// POST /api/preferences — save user preferences (Change 4: speed slider)
+app.post('/api/preferences', (req, res) => {
+  const { speed } = req.body;
+  if (speed === undefined) {
+    return res.status(400).json({ error: 'No preferences provided.' });
+  }
+  const speedVal = parseFloat(speed);
+  if (isNaN(speedVal) || speedVal < 0 || speedVal > 10) {
+    return res.status(400).json({ error: 'Speed must be a number between 0 and 10.' });
+  }
+  savePreferences(req.session.user.username, { speed: speedVal });
+  res.json({ ok: true });
 });
 
 // POST /api/change-password

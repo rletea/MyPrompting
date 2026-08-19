@@ -84,4 +84,25 @@ async function changePassword(username, currentPassword, newPassword) {
   return true;
 }
 
-module.exports = { findUser, verifyPassword, changePassword };
+/**
+ * Save preferences for a user.
+ * Merges the provided prefs object into the user's existing preferences.
+ */
+function savePreferences(username, prefs) {
+  const users = readUsers();
+  const idx   = users.findIndex((u) => u.username.toLowerCase() === username.toLowerCase());
+  if (idx === -1) return;
+  users[idx].preferences = Object.assign({}, users[idx].preferences || {}, prefs);
+  writeUsers(users);
+}
+
+/**
+ * Get preferences for a user.
+ * Returns {} if user not found or no preferences stored.
+ */
+function getPreferences(username) {
+  const user = findUser(username);
+  return (user && user.preferences) ? user.preferences : {};
+}
+
+module.exports = { findUser, verifyPassword, changePassword, savePreferences, getPreferences };

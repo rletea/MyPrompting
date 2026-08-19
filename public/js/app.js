@@ -187,7 +187,7 @@ btnLoadScript.addEventListener('click', () => {
   } else if (scriptInput.value.trim()) {
     displayScript(scriptInput.value.trim());
   } else {
-    showError(fileError, 'Please paste text or upload a file first.');
+    showError(fileError, 'Please paste or load a text before starting.');
   }
 });
 
@@ -299,10 +299,24 @@ function beginScrolling() {
 function startScroll() {
   if (isPlaying) return;
 
+  // Change 1: Guard — require a real script to be loaded
+  const hasScript = prompterText.querySelector('.placeholder-msg') === null &&
+                    prompterText.textContent.trim().length > 0;
+  if (!hasScript) {
+    showError(fileError, 'Please paste or load a text before starting.');
+    return;
+  }
+
   btnPlay.disabled    = true;
   btnPause.disabled   = true;
   fsBtnPlay.disabled  = true;
   fsBtnPause.disabled = true;
+
+  // Change 3: Start video recording if the checkbox is enabled
+  const recToggle = document.getElementById('rec-enabled-toggle');
+  if (recToggle && recToggle.checked && typeof window._startRecording === 'function') {
+    window._startRecording();
+  }
 
   if (needsCountdown) {
     countdownAborted = false;
@@ -359,10 +373,9 @@ function stopScroll() {
   fsBtnPause.disabled = true;
   updatePrompterCursor();
 
-  // Stop video recording if it is currently active
-  const btnRecStop = document.getElementById('btn-rec-stop');
-  if (btnRecStop && !btnRecStop.disabled) {
-    btnRecStop.click();
+  // Change 3: Stop video recording if it is currently active
+  if (typeof window._isRecordingActive === 'function' && window._isRecordingActive()) {
+    if (typeof window._stopRecording === 'function') window._stopRecording();
   }
 }
 
@@ -374,12 +387,27 @@ btnPlay.addEventListener('click',  startScroll);
 btnPause.addEventListener('click', pauseScroll);
 btnStop.addEventListener('click',  stopScroll);
 
+// Change 4: persist speed to server (debounced — fire 500 ms after last change)
+let _speedSaveTimer = null;
+function persistSpeed(value) {
+  clearTimeout(_speedSaveTimer);
+  _speedSaveTimer = setTimeout(() => {
+    fetch('/api/preferences', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ speed: parseFloat(value) }),
+    }).catch(() => {}); // best-effort; ignore network errors
+  }, 500);
+}
+
 // Speed slider — takes effect immediately because pixelsPerTick reads it live
 speedSlider.addEventListener('input', () => {
   const v = Number(speedSlider.value);
   speedValue.textContent = v % 1 === 0 ? String(v) : v.toFixed(1); // "0","1","1.5"…
   // Keep fullscreen speed slider in sync
   fsSpeedSlider.value = speedSlider.value;
+  // Change 4: save preference
+  persistSpeed(speedSlider.value);
 });
 
 /* ============================================================
@@ -556,6 +584,8 @@ fsSpeedSlider.addEventListener('input', () => {
   speedValue.textContent = Number(fsSpeedSlider.value) % 1 === 0
     ? fsSpeedSlider.value
     : Number(fsSpeedSlider.value).toFixed(1);
+  // Change 4: also persist when adjusted from fullscreen overlay
+  persistSpeed(fsSpeedSlider.value);
 });
 
 /* ============================================================
@@ -686,11 +716,23 @@ function truncateFilename(name, maxLen) {
   applyLineWidth(lineWidthSlider.value);
   setBackground('#000000', null);
 
-  // Load session user and show in the user bar
+  // Load session user and restore persisted speed preference
   fetch('/api/me')
     .then((r) => r.json())
     .then((data) => {
       if (data.username) userBarName.textContent = data.username;
+      // Change 4: restore saved speed
+      const savedSpeed = data.preferences && data.preferences.speed != null
+        ? data.preferences.speed
+        : null;
+      if (savedSpeed !== null) {
+        const v = parseFloat(savedSpeed);
+        if (!isNaN(v) && v >= 0 && v <= 10) {
+          speedSlider.value   = v;
+          fsSpeedSlider.value = v;
+          speedValue.textContent = v % 1 === 0 ? v : v.toFixed(1);
+        }
+      }
     })
     .catch(() => {}); // session expired — server redirects on next navigation
 })();

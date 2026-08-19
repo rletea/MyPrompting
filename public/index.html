@@ -77,6 +77,52 @@
     </div>
   </section>
 
+  <!-- ── VIDEO RECORDING ───────────────────────────────── -->
+  <section class="panel-section" aria-labelledby="lbl-recording">
+    <h2 id="lbl-recording" class="section-title">Video Recording</h2>
+
+    <!-- a) Camera selector (populated dynamically) -->
+    <label for="camera-select" class="control-label">Camera</label>
+    <select id="camera-select" aria-label="Select camera">
+      <option value="">— select camera —</option>
+    </select>
+
+    <!-- b) Facing toggle (front / back — useful on smartphones) -->
+    <div class="toggle-row" style="margin-top:8px;">
+      <label class="control-label" style="margin:0;">Rear camera</label>
+      <label class="switch" title="Toggle front/rear camera">
+        <input id="camera-facing-toggle" type="checkbox" role="switch" aria-label="Use rear camera" />
+        <span class="slider-toggle"></span>
+      </label>
+    </div>
+
+    <!-- c) Record with Play toggle -->
+    <div class="toggle-row" style="margin-top:8px;">
+      <label class="control-label" style="margin:0;">Record when playing</label>
+      <label class="switch" title="Enable video recording on Play">
+        <input id="rec-enabled-toggle" type="checkbox" role="switch" aria-label="Enable video recording" />
+        <span class="slider-toggle"></span>
+      </label>
+    </div>
+    <p id="rec-selected-status" class="rec-status" aria-live="polite">Recording is NOT selected</p>
+
+    <p id="rec-status" class="rec-status" aria-live="polite"></p>
+    <p id="rec-error"  class="error-msg"  role="alert" aria-live="assertive"></p>
+
+    <!-- Playback of finished recording (stays in panel) -->
+    <video id="rec-playback"
+      controls
+      playsinline
+      class="vid-preview hidden"
+      aria-label="Recording playback">
+    </video>
+
+    <a id="rec-download" class="btn btn-primary full-width hidden" download="recording.webm">
+      ⬇ Download Recording
+    </a>
+    <button id="btn-rec-clear" class="btn btn-ghost full-width hidden">✕ Clear Recording</button>
+  </section>
+
   <!-- ── PLAYBACK CONTROLS ──────────────────────────────── -->
   <section class="panel-section" aria-labelledby="lbl-playback">
     <h2 id="lbl-playback" class="section-title">Playback</h2>
@@ -99,47 +145,6 @@
       step="0.5"
       aria-label="Scroll speed"
     />
-  </section>
-
-  <!-- ── VIDEO RECORDING ───────────────────────────────── -->
-  <section class="panel-section" aria-labelledby="lbl-recording">
-    <h2 id="lbl-recording" class="section-title">Video Recording</h2>
-
-    <!-- Camera selector (populated dynamically) -->
-    <label for="camera-select" class="control-label">Camera</label>
-    <select id="camera-select" aria-label="Select camera">
-      <option value="">— select camera —</option>
-    </select>
-
-    <!-- Facing toggle (front / back — useful on smartphones) -->
-    <div class="toggle-row" style="margin-top:8px;">
-      <label class="control-label" style="margin:0;">Rear camera</label>
-      <label class="switch" title="Toggle front/rear camera">
-        <input id="camera-facing-toggle" type="checkbox" role="switch" aria-label="Use rear camera" />
-        <span class="slider-toggle"></span>
-      </label>
-    </div>
-
-    <div class="playback-btns" style="margin-top:10px;">
-      <button id="btn-rec-start" class="btn btn-rec"  aria-label="Start recording">&#9679; Record</button>
-      <button id="btn-rec-stop"  class="btn btn-stop" aria-label="Stop recording" disabled>&#9646; Stop</button>
-    </div>
-
-    <p id="rec-status" class="rec-status" aria-live="polite"></p>
-    <p id="rec-error"  class="error-msg"  role="alert" aria-live="assertive"></p>
-
-    <!-- Playback of finished recording (stays in panel) -->
-    <video id="rec-playback"
-      controls
-      playsinline
-      class="vid-preview hidden"
-      aria-label="Recording playback">
-    </video>
-
-    <a id="rec-download" class="btn btn-primary full-width hidden" download="recording.webm">
-      ⬇ Download Recording
-    </a>
-    <button id="btn-rec-clear" class="btn btn-ghost full-width hidden">✕ Clear Recording</button>
   </section>
 
   <!-- ── FULLSCREEN ─────────────────────────────────────── -->
