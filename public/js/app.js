@@ -308,9 +308,12 @@ function startScroll() {
   }
 
   btnPlay.disabled    = true;
-  btnPause.disabled   = true;
   fsBtnPlay.disabled  = true;
-  fsBtnPause.disabled = true;
+
+  // Pause is enabled during countdown so the user can cancel it;
+  // beginScrolling() will keep it enabled once scrolling starts.
+  btnPause.disabled   = false;
+  fsBtnPause.disabled = false;
 
   // Change 3: Start video recording if the checkbox is enabled
   const recToggle = document.getElementById('rec-enabled-toggle');
