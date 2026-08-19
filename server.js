@@ -256,16 +256,25 @@ app.get('*', (req, res) => {
 
 // ---------------------------------------------------------------------------
 // Start server — seed users first, then listen
+// Only auto-starts when this file is run directly (not when required by tests)
 // ---------------------------------------------------------------------------
-autoSeed()
-  .then(() => {
-    app.listen(PORT, () => {
-      console.log(`Teleprompter server running on port ${PORT}`);
+if (require.main === module) {
+  autoSeed()
+    .then(() => {
+      app.listen(PORT, () => {
+        console.log(`Teleprompter server running on port ${PORT}`);
+      });
+    })
+    .catch((err) => {
+      console.error('[seed] Fatal error during startup seed:', err);
+      process.exit(1);
     });
-  })
-  .catch((err) => {
-    console.error('[seed] Fatal error during startup seed:', err);
-    process.exit(1);
+} else {
+  // When required by tests: seed the users file before any test runs.
+  // We expose the promise so test files can await it in beforeAll.
+  app._seedReady = autoSeed().catch((err) => {
+    console.error('[seed] Error during test seed:', err);
   });
+}
 
 module.exports = app;

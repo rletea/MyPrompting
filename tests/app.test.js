@@ -199,39 +199,44 @@ describe('buildPermissionErrorMessage', () => {
 });
 
 /* ============================================================
-   Server smoke tests — Express app responds correctly
+   Server smoke tests — Express app boot & public routes
+   Full API coverage is in tests/server.test.js.
    ============================================================ */
-describe('server', () => {
-  let server;
+describe('server smoke', () => {
+  let app;
 
-  beforeAll((done) => {
+  beforeAll(() => {
     jest.spyOn(console, 'log').mockImplementation(() => {});
-    const app = require('../server');
-    const http = require('http');
-    server = http.createServer(app);
-    server.listen(0, done);   // port 0 → OS assigns a free port
+    jest.spyOn(console, 'warn').mockImplementation(() => {});
+    app = require('../server');
   });
 
-  afterAll((done) => {
+  afterAll(() => {
     console.log.mockRestore();
-    server.close(done);
+    console.warn.mockRestore();
   });
 
-  test('GET / returns HTTP 200', (done) => {
+  test('GET /login.html is publicly accessible (200)', (done) => {
     const http = require('http');
-    const { port } = server.address();
-    http.get(`http://localhost:${port}/`, (res) => {
-      expect(res.statusCode).toBe(200);
-      done();
+    const server = http.createServer(app);
+    server.listen(0, () => {
+      const { port } = server.address();
+      http.get(`http://localhost:${port}/login.html`, (res) => {
+        expect(res.statusCode).toBe(200);
+        server.close(done);
+      });
     });
   });
 
-  test('GET /unknown-route falls back to index.html (200)', (done) => {
+  test('GET / without session redirects to login (302)', (done) => {
     const http = require('http');
-    const { port } = server.address();
-    http.get(`http://localhost:${port}/nonexistent-route`, (res) => {
-      expect(res.statusCode).toBe(200);
-      done();
+    const server = http.createServer(app);
+    server.listen(0, () => {
+      const { port } = server.address();
+      http.get(`http://localhost:${port}/`, (res) => {
+        expect(res.statusCode).toBe(302);
+        server.close(done);
+      });
     });
   });
 });
