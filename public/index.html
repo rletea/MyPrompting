@@ -127,12 +127,6 @@
   <section class="panel-section" aria-labelledby="lbl-playback">
     <h2 id="lbl-playback" class="section-title">Playback</h2>
 
-    <div class="playback-btns">
-      <button id="btn-play"  class="btn btn-play"  title="Play"  aria-label="Play">&#9654; Play</button>
-      <button id="btn-pause" class="btn btn-pause" title="Pause" aria-label="Pause" disabled>&#9646;&#9646; Pause</button>
-      <button id="btn-stop"  class="btn btn-stop"  title="Stop"  aria-label="Stop and reset">&#9646; Stop</button>
-    </div>
-
     <label for="speed-slider" class="control-label">
       Speed: <span id="speed-value">1</span>x
     </label>
@@ -145,6 +139,12 @@
       step="0.5"
       aria-label="Scroll speed"
     />
+
+    <div class="playback-btns" style="margin-top:10px;">
+      <button id="btn-play"  class="btn btn-play"  title="Play"  aria-label="Play">&#9654; Play</button>
+      <button id="btn-pause" class="btn btn-pause" title="Pause" aria-label="Pause" disabled>&#9646;&#9646; Pause</button>
+      <button id="btn-stop"  class="btn btn-stop"  title="Stop"  aria-label="Stop and reset">&#9646; Stop</button>
+    </div>
   </section>
 
   <!-- ── FULLSCREEN ─────────────────────────────────────── -->

@@ -613,6 +613,12 @@ function closeMobilePanel() {
   btnTogglePanel.setAttribute('aria-label', 'Show controls');
 }
 
+function updateFabPosition() {
+  if (isMobilePortrait()) return; // mobile uses its own fixed position via CSS
+  const collapsed = controlPanel.classList.contains('collapsed');
+  btnTogglePanel.style.left = collapsed ? 'calc(48px + 10px)' : 'calc(300px + 10px)';
+}
+
 btnTogglePanel.addEventListener('click', () => {
   if (isMobilePortrait()) {
     if (controlPanel.classList.contains('mobile-open')) {
@@ -622,6 +628,7 @@ btnTogglePanel.addEventListener('click', () => {
     }
   } else {
     controlPanel.classList.toggle('collapsed');
+    updateFabPosition();
   }
 });
 

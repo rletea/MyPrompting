@@ -104,12 +104,13 @@ body {
   z-index: 1;
 }
 
-/* Desktop: button sits in the TOP-RIGHT of the prompter area (always visible,
-   never hidden behind the panel). Uses top-right so it works for any panel width. */
+/* Desktop: button sits at the TOP-LEFT of the prompter area (just past the panel).
+   left: calc(300px + 10px) keeps it clear of the sidebar at all times. */
 #btn-toggle-panel {
   position: fixed;
   top: 10px;
-  right: 10px;
+  left: calc(300px + 10px);
+  right: auto;
   z-index: 20;
   background: rgba(0,0,0,0.55);
   border: 1px solid #333;
@@ -118,7 +119,7 @@ body {
   cursor: pointer;
   padding: 5px 9px;
   border-radius: 6px;
-  transition: color 0.15s, background 0.15s, border-color 0.15s;
+  transition: color 0.15s, background 0.15s, border-color 0.15s, left 0.25s ease;
   line-height: 1;
 }
 #btn-toggle-panel:hover {
