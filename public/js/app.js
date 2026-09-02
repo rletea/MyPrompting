@@ -315,21 +315,33 @@ function startScroll() {
   btnPause.disabled   = false;
   fsBtnPause.disabled = false;
 
-  // Change 3: Start video recording if the checkbox is enabled
+  // When recording is enabled, wait for the camera to open before the countdown.
+  // This ensures the PiP preview is visible before the teleprompter starts.
   const recToggle = document.getElementById('rec-enabled-toggle');
-  if (recToggle && recToggle.checked && typeof window._startRecording === 'function') {
-    window._startRecording();
-  }
+  const useRecording = recToggle && recToggle.checked &&
+                       typeof window._startRecording === 'function';
 
-  if (needsCountdown) {
-    countdownAborted = false;
-    runCountdown(() => {
-      needsCountdown = false;
+  const launchCountdown = () => {
+    if (needsCountdown) {
+      countdownAborted = false;
+      runCountdown(() => {
+        needsCountdown = false;
+        beginScrolling();
+      });
+    } else {
+      // Resume after Pause — no countdown
       beginScrolling();
+    }
+  };
+
+  if (useRecording) {
+    // Await camera open; _startRecording calls btnStop on failure so
+    // countdownAborted will be true if something goes wrong.
+    window._startRecording().then(() => {
+      if (!countdownAborted) launchCountdown();
     });
   } else {
-    // Resume after Pause — no countdown
-    beginScrolling();
+    launchCountdown();
   }
 }
 
