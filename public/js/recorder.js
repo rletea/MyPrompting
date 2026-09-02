@@ -62,12 +62,19 @@
   }
 
   /* ------------------------------------------------------------------
-     Recording checkbox — update status text
+     Recording checkbox — open / close camera preview immediately
      ------------------------------------------------------------------ */
   recEnabledToggle.addEventListener('change', () => {
-    recSelectedStatus.textContent = recEnabledToggle.checked
-      ? 'Recording is selected'
-      : 'Recording is NOT selected';
+    if (recEnabledToggle.checked) {
+      recSelectedStatus.textContent = 'Recording is selected';
+      openCamera();
+    } else {
+      recSelectedStatus.textContent = 'Recording is NOT selected';
+      // Close the preview stream unless we are mid-recording
+      if (!isRecordingActive()) {
+        closeCameraPreview();
+      }
+    }
   });
 
   /* ------------------------------------------------------------------
@@ -141,18 +148,17 @@
   }
 
   /* ------------------------------------------------------------------
-     Start recording — called by app.js startScroll() when checkbox is on
+     openCamera — called when checkbox is ticked.
+     Opens the stream and shows the PiP preview so the presenter can
+     frame themselves before pressing Play.
      ------------------------------------------------------------------ */
-  async function startRecording() {
+  async function openCamera() {
     if (!supported) return;
-    if (mediaRecorder && mediaRecorder.state === 'recording') return;
+    // Already have a live stream — nothing to do
+    if (activeStream) return;
 
     clearRecError();
-    setRecStatus('Requesting camera access…');
-
-    // Release any previous live stream
-    stopStreamTracks(activeStream);
-    activeStream = null;
+    setRecStatus('Opening camera…');
 
     const constraints = buildConstraints();
     let stream;
@@ -161,35 +167,93 @@
     } catch (err) {
       showRecError(buildPermissionErrorMessage(err));
       setRecStatus('');
-      // Camera failed — stop the prompter scroll too
-      const btnStop = document.getElementById('btn-stop');
-      if (btnStop) btnStop.click();
+      // Uncheck the toggle so the UI stays consistent
+      recEnabledToggle.checked = false;
+      recSelectedStatus.textContent = 'Recording is NOT selected';
       return;
     }
 
-    // After permission granted, refresh camera list (labels now available)
+    // Refresh camera list now that permission is granted
     populateCameras();
 
     activeStream = stream;
 
-    // Show PiP preview inside the prompter area
+    // Show PiP preview (not recording yet — no red pulse)
     recPreview.srcObject = stream;
     recPreview.classList.remove('hidden');
-    recPreview.classList.add('recording');
+    recPreview.classList.remove('recording');   // no red border until record starts
     prompterContainer.classList.add('pip-active');
+
+    setRecStatus('Camera ready — press Play to record.');
+  }
+
+  /* ------------------------------------------------------------------
+     closeCameraPreview — stops the preview stream without saving anything.
+     Called when checkbox is unticked while not recording.
+     ------------------------------------------------------------------ */
+  function closeCameraPreview() {
+    stopStreamTracks(activeStream);
+    activeStream = null;
+    recPreview.srcObject = null;
+    recPreview.classList.add('hidden');
+    recPreview.classList.remove('recording');
+    prompterContainer.classList.remove('pip-active');
+    setRecStatus('');
+  }
+
+  /* ------------------------------------------------------------------
+     startRecording — called by app.js startScroll() when checkbox is on.
+     If openCamera() already ran the stream is reused; otherwise the
+     camera is opened here (fallback for the first-Play path).
+     ------------------------------------------------------------------ */
+  async function startRecording() {
+    if (!supported) return;
+    if (mediaRecorder && mediaRecorder.state === 'recording') return;
+
+    // If camera was not pre-opened by the checkbox, open it now
+    if (!activeStream) {
+      clearRecError();
+      setRecStatus('Requesting camera access…');
+
+      const constraints = buildConstraints();
+      let stream;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia(constraints);
+      } catch (err) {
+        showRecError(buildPermissionErrorMessage(err));
+        setRecStatus('');
+        // Camera failed — stop the prompter scroll too
+        const btnStop = document.getElementById('btn-stop');
+        if (btnStop) btnStop.click();
+        return;
+      }
+
+      populateCameras();
+      activeStream = stream;
+
+      recPreview.srcObject = stream;
+      recPreview.classList.remove('hidden');
+      prompterContainer.classList.add('pip-active');
+    }
+
+    // Stream is live — hide any previous playback UI
     recPlayback.classList.add('hidden');
     recDownload.classList.add('hidden');
     btnRecClear.classList.add('hidden');
+
+    // Switch PiP border to recording red
+    recPreview.classList.add('recording');
 
     // Revoke previous recording blob and advance the index
     if (recordingBlobUrl) {
       URL.revokeObjectURL(recordingBlobUrl);
       recordingBlobUrl = null;
-      recordingIndex++;   // previous recording exists → next filename gets a higher index
+      recordingIndex++;
     }
 
     videoChunks = [];
 
+    const stream   = activeStream;
     const mimeType = getSupportedMimeType();
     const options  = mimeType ? { mimeType } : {};
 
@@ -199,6 +263,7 @@
       showRecError(`Could not start recorder: ${err.message}`);
       setRecStatus('');
       stopStreamTracks(stream);
+      activeStream = null;
       recPreview.classList.add('hidden');
       recPreview.classList.remove('recording');
       prompterContainer.classList.remove('pip-active');
@@ -243,6 +308,7 @@
       showRecError(`Recorder error: ${e.error ? e.error.message : 'Unknown error'}`);
       setRecStatus('');
       stopStreamTracks(stream);
+      activeStream = null;
       recPreview.classList.add('hidden');
       recPreview.classList.remove('recording');
       prompterContainer.classList.remove('pip-active');
@@ -386,6 +452,10 @@
     btnRecClear.classList.add('hidden');
     setRecStatus('');
     clearRecError();
+
+    // Reset the checkbox so user must consciously re-enable recording
+    recEnabledToggle.checked = false;
+    recSelectedStatus.textContent = 'Recording is NOT selected';
   }
 
   // Clear Recording button
