@@ -47,6 +47,7 @@
   let videoChunks      = [];
   let recordingBlobUrl = null;
   let activeStream     = null;   // current live stream (released on stop)
+  let recordingIndex   = 0;      // increments each session; used to index filenames
 
   /* ------------------------------------------------------------------
      Feature detection
@@ -120,15 +121,16 @@
   }
 
   /* ------------------------------------------------------------------
-     Preferred video MIME types (in order of preference)
+     Preferred video MIME types — MP4 first, webm as fallback
      ------------------------------------------------------------------ */
   const PREFERRED_MIME_TYPES = [
+    'video/mp4;codecs=h264,aac',
+    'video/mp4;codecs=avc1',
+    'video/mp4',
     'video/webm;codecs=vp9,opus',
     'video/webm;codecs=vp8,opus',
     'video/webm;codecs=h264,opus',
     'video/webm',
-    'video/mp4;codecs=h264,aac',
-    'video/mp4',
   ];
 
   function getSupportedMimeType() {
@@ -179,10 +181,11 @@
     recDownload.classList.add('hidden');
     btnRecClear.classList.add('hidden');
 
-    // Revoke previous recording blob
+    // Revoke previous recording blob and advance the index
     if (recordingBlobUrl) {
       URL.revokeObjectURL(recordingBlobUrl);
       recordingBlobUrl = null;
+      recordingIndex++;   // previous recording exists → next filename gets a higher index
     }
 
     videoChunks = [];
@@ -224,10 +227,12 @@
       recPlayback.src = recordingBlobUrl;
       recPlayback.classList.remove('hidden');
 
-      // Download link + Clear button
-      const ext            = mimeExtension(finalMime);
+      // Build filename: yyyymmddhhss[_N].ext
+      const ext      = mimeExtension(finalMime);
+      const filename = buildFilename(ext);
+
       recDownload.href     = recordingBlobUrl;
-      recDownload.download = `recording.${ext}`;
+      recDownload.download = filename;
       recDownload.classList.remove('hidden');
       btnRecClear.classList.remove('hidden');
 
@@ -311,10 +316,30 @@
   }
 
   function mimeExtension(mime) {
-    if (!mime) return 'webm';
+    if (!mime) return 'mp4';
     if (mime.startsWith('video/mp4'))  return 'mp4';
     if (mime.startsWith('video/ogg'))  return 'ogv';
     return 'webm';
+  }
+
+  /**
+   * Build a timestamped filename for the download.
+   * Format: yyyymmddhhss[_N].ext
+   *   yyyymmdd  — date
+   *   hh        — 24-h hour (2 digits)
+   *   ss        — seconds (2 digits — minutes omitted to match requested pattern)
+   * If recordingIndex > 0, appends _2, _3, … to avoid collisions within a session.
+   */
+  function buildFilename(ext) {
+    const now  = new Date();
+    const yyyy = now.getFullYear();
+    const mm   = String(now.getMonth() + 1).padStart(2, '0');
+    const dd   = String(now.getDate()).padStart(2, '0');
+    const hh   = String(now.getHours()).padStart(2, '0');
+    const ss   = String(now.getSeconds()).padStart(2, '0');
+    const base = `${yyyy}${mm}${dd}${hh}${ss}`;
+    const idx  = recordingIndex > 0 ? `_${recordingIndex + 1}` : '';
+    return `${base}${idx}.${ext}`;
   }
 
   function formatBytes(bytes) {
@@ -339,11 +364,12 @@
     stopStreamTracks(activeStream);
     activeStream = null;
 
-    // Release blob URL
+    // Release blob URL and reset the index for this session
     if (recordingBlobUrl) {
       URL.revokeObjectURL(recordingBlobUrl);
       recordingBlobUrl = null;
     }
+    recordingIndex = 0;
 
     videoChunks = [];
 
@@ -375,7 +401,7 @@
      Export for unit testing
      ------------------------------------------------------------------ */
   if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { mimeExtension, formatBytes, buildPermissionErrorMessage };
+    module.exports = { mimeExtension, formatBytes, buildPermissionErrorMessage, buildFilename };
   }
 
 })();

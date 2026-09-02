@@ -51,7 +51,7 @@ stubDOM();
 const { pixelsPerTick, truncateFilename } =
   require('../public/js/app');
 
-const { mimeExtension, formatBytes, buildPermissionErrorMessage } =
+const { mimeExtension, formatBytes, buildPermissionErrorMessage, buildFilename } =
   require('../public/js/recorder');
 
 /* ============================================================
@@ -137,12 +137,72 @@ describe('mimeExtension', () => {
     ['video/mp4;codecs=h264,aac',  'mp4'],
     ['video/mp4',                  'mp4'],
     ['video/ogg',                  'ogv'],
-    ['',                           'webm'],
-    [undefined,                    'webm'],
+    ['',                           'mp4'],   // default is now mp4
+    [undefined,                    'mp4'],   // default is now mp4
   ];
 
   test.each(cases)('mimeExtension(%s) → %s', (mime, expected) => {
     expect(mimeExtension(mime)).toBe(expected);
+  });
+});
+
+/* ============================================================
+   buildFilename
+   ============================================================ */
+describe('buildFilename', () => {
+  test('returns a string ending with the given extension', () => {
+    expect(buildFilename('mp4')).toMatch(/\.mp4$/);
+  });
+
+  test('matches the yyyymmddhhss format (14 digits before the dot)', () => {
+    const name = buildFilename('mp4');
+    // e.g. "20241231235959.mp4"
+    expect(name).toMatch(/^\d{12}\.\w+$/);
+  });
+
+  test('year is a 4-digit current year', () => {
+    const name = buildFilename('mp4');
+    const year = parseInt(name.slice(0, 4), 10);
+    expect(year).toBeGreaterThanOrEqual(2024);
+  });
+
+  test('month component is 01–12', () => {
+    const name = buildFilename('mp4');
+    const month = parseInt(name.slice(4, 6), 10);
+    expect(month).toBeGreaterThanOrEqual(1);
+    expect(month).toBeLessThanOrEqual(12);
+  });
+
+  test('day component is 01–31', () => {
+    const name = buildFilename('mp4');
+    const day = parseInt(name.slice(6, 8), 10);
+    expect(day).toBeGreaterThanOrEqual(1);
+    expect(day).toBeLessThanOrEqual(31);
+  });
+
+  test('hour component is 00–23', () => {
+    const name = buildFilename('mp4');
+    const hour = parseInt(name.slice(8, 10), 10);
+    expect(hour).toBeGreaterThanOrEqual(0);
+    expect(hour).toBeLessThanOrEqual(23);
+  });
+
+  test('seconds component is 00–59', () => {
+    const name = buildFilename('mp4');
+    const secs = parseInt(name.slice(10, 12), 10);
+    expect(secs).toBeGreaterThanOrEqual(0);
+    expect(secs).toBeLessThanOrEqual(59);
+  });
+
+  test('works with webm extension', () => {
+    expect(buildFilename('webm')).toMatch(/\.webm$/);
+  });
+
+  test('two calls within the same second produce identical base names', () => {
+    // Both generated in the same JS tick, so seconds match
+    const a = buildFilename('mp4').replace(/\.mp4$/, '');
+    const b = buildFilename('mp4').replace(/\.mp4$/, '');
+    expect(a).toBe(b);
   });
 });
 
