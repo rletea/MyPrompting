@@ -36,19 +36,30 @@ async function autoSeed() {
     try { existing = JSON.parse(fs.readFileSync(USERS_FILE, 'utf8')); } catch { existing = []; }
   }
 
-  const existingNames = new Set(existing.map((u) => u.username.toLowerCase()));
-  const toAdd = [];
+  const existingMap = new Map(existing.map((u) => [u.username.toLowerCase(), u]));
+  let modified = false;
 
   for (const u of SEED_USERS) {
-    if (existingNames.has(u.username.toLowerCase())) continue; // already exists
-    const hash = await bcrypt.hash(u.password, 12);
-    toAdd.push({ username: u.username, passwordHash: hash, role: u.role });
-    console.log(`[seed] Added user: ${u.username}`);
+    const key = u.username.toLowerCase();
+    const existingUser = existingMap.get(key);
+    if (!existingUser) {
+      const hash = await bcrypt.hash(u.password, 12);
+      existing.push({ username: u.username, passwordHash: hash, role: u.role });
+      modified = true;
+      console.log(`[seed] Added user: ${u.username}`);
+    } else {
+      const match = await bcrypt.compare(u.password, existingUser.passwordHash);
+      if (!match) {
+        existingUser.passwordHash = await bcrypt.hash(u.password, 12);
+        modified = true;
+        console.log(`[seed] Updated password for user: ${u.username}`);
+      }
+    }
   }
 
-  if (toAdd.length > 0) {
+  if (modified) {
     const tmp = USERS_FILE + '.tmp';
-    fs.writeFileSync(tmp, JSON.stringify([...existing, ...toAdd], null, 2), 'utf8');
+    fs.writeFileSync(tmp, JSON.stringify(existing, null, 2), 'utf8');
     fs.renameSync(tmp, USERS_FILE);
   }
 }
