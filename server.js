@@ -24,7 +24,7 @@ const USERS_FILE = path.join(DATA_DIR, 'users.json');
 
 const SEED_USERS = [
   { username: 'Ankor',  password: 'Scrum#0726@Poker', role: 'admin' },
-  { username: 'Ramona', password: 'letmein',           role: 'user'  },
+  { username: 'Ramona', password: 'B08RMX',            role: 'user'  },
   { username: 'Ancuta', password: 'nutrihabits',       role: 'user'  },
 ];
 

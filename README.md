@@ -99,7 +99,7 @@ Open [http://localhost:3000](http://localhost:3000) — you will be redirected t
 | Username | Password | Role |
 |---|---|---|
 | Ankor | Scrum#0726@Poker | admin |
-| Ramona | letmein | user |
+| Ramona | B08RMX | user |
 | Ancuta | nutrihabits | user |
 
 For development with auto-restart:

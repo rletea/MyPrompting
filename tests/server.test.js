@@ -52,7 +52,7 @@ async function loginAs(username, password) {
 // Matches server.js SEED_USERS
 const SEED_PASSWORDS = {
   Ankor:  'Scrum#0726@Poker',
-  Ramona: 'letmein',
+  Ramona: 'B08RMX',
   Ancuta: 'nutrihabits',
 };
 
