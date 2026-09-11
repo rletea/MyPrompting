@@ -781,16 +781,6 @@ btnLogout.addEventListener('click', async () => {
   // We write to it on load so a re-opened tab starts fresh.
   sessionStorage.setItem(SESSION_KEY, '1');
 
-  // On pagehide (tab close, browser close, navigate away) call logout.
-  // sendBeacon is non-blocking and survives page unload.
-  window.addEventListener('pagehide', (e) => {
-    // e.persisted = true means the page went into the bfcache (back/forward),
-    // not actually closed — don't log out in that case.
-    if (!e.persisted) {
-      navigator.sendBeacon('/api/logout');
-    }
-  });
-
   // ── Inactivity timer ─────────────────────────────────────────────────
   // Use localStorage so the timestamp survives navigations within the same
   // session but is reset on a fresh login (we write it there too).
