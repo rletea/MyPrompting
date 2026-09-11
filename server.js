@@ -144,9 +144,10 @@ function requireLogin(req, res, next) {
 
 // Serve login page and its assets without auth
 // (use sendFile for individual files — express.static on a file path doesn't work)
-app.get('/login.html',    (_req, res) => res.sendFile(path.join(__dirname, 'public', 'login.html')));
-app.get('/css/login.css', (_req, res) => res.sendFile(path.join(__dirname, 'public', 'css', 'login.css')));
-app.get('/js/login.js',   (_req, res) => res.sendFile(path.join(__dirname, 'public', 'js', 'login.js')));
+app.get('/login.html',             (_req, res) => res.sendFile(path.join(__dirname, 'public', 'login.html')));
+app.get('/css/login.css',          (_req, res) => res.sendFile(path.join(__dirname, 'public', 'css', 'login.css')));
+app.get('/js/login.js',            (_req, res) => res.sendFile(path.join(__dirname, 'public', 'js', 'login.js')));
+app.get('/js/change-password.js',  (_req, res) => res.sendFile(path.join(__dirname, 'public', 'js', 'change-password.js')));
 
 // POST /api/login
 app.post('/api/login', async (req, res) => {

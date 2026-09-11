@@ -203,9 +203,13 @@ input::-ms-clear {
   justify-content: center;
   transition: color 0.15s;
   line-height: 1;
-  z-index: 5;
+  z-index: 10;
+  user-select: none;
+  -webkit-user-select: none;
+  outline: none;
 }
 .btn-eye:hover { color: #d4a930; }
+.btn-eye:focus-visible { color: #d4a930; }
 .btn-eye svg {
   display: block;
   pointer-events: none;
