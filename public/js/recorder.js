@@ -108,10 +108,13 @@
     }
   }
 
-  if (supported) populateCameras();
-
-  // Re-enumerate if a new device is plugged in
-  navigator.mediaDevices.addEventListener('devicechange', populateCameras);
+  if (supported) {
+    populateCameras();
+    // Re-enumerate if a new device is plugged in
+    if (navigator.mediaDevices && typeof navigator.mediaDevices.addEventListener === 'function') {
+      navigator.mediaDevices.addEventListener('devicechange', populateCameras);
+    }
+  }
 
   /* ------------------------------------------------------------------
      Build getUserMedia constraints from current UI state

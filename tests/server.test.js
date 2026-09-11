@@ -428,3 +428,55 @@ describe('protected static files', () => {
     expect(res.status).toBe(200);
   });
 });
+
+/* ============================================================
+   Rate limiter unit tests
+   ============================================================ */
+describe('createRateLimiter middleware', () => {
+  test('allows requests within threshold and blocks excess with 429', () => {
+    const limiter = app._createRateLimiter({
+      windowMs: 60 * 1000,
+      max: 2,
+      message: 'Rate limit exceeded.',
+    });
+
+    const mockReq = { ip: '192.168.1.50' };
+    const createRes = () => {
+      const headers = {};
+      const res = {
+        statusCode: 200,
+        headers,
+        set: (k, v) => { headers[k] = v; },
+        status: (code) => { res.statusCode = code; return res; },
+        json: (data) => { res.body = data; return res; },
+      };
+      return res;
+    };
+
+    const origEnv = process.env.NODE_ENV;
+    try {
+      process.env.NODE_ENV = 'production';
+
+      let nextCalled = 0;
+      const next = () => { nextCalled++; };
+
+      // 1st request -> allowed
+      limiter(mockReq, createRes(), next);
+      expect(nextCalled).toBe(1);
+
+      // 2nd request -> allowed
+      limiter(mockReq, createRes(), next);
+      expect(nextCalled).toBe(2);
+
+      // 3rd request -> blocked with 429
+      const res3 = createRes();
+      limiter(mockReq, res3, next);
+      expect(nextCalled).toBe(2);
+      expect(res3.statusCode).toBe(429);
+      expect(res3.body.error).toBe('Rate limit exceeded.');
+      expect(res3.headers['Retry-After']).toBeDefined();
+    } finally {
+      process.env.NODE_ENV = origEnv;
+    }
+  });
+});

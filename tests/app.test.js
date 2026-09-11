@@ -14,7 +14,7 @@ function stubDOM() {
   const el = {
     addEventListener:    () => {},
     removeEventListener: () => {},
-    style:               {},
+    style:               { setProperty: () => {}, removeProperty: () => {} },
     classList:           { toggle: () => {}, add: () => {}, remove: () => {}, contains: () => false },
     querySelectorAll:    () => [],
     textContent:         '',
@@ -37,12 +37,39 @@ function stubDOM() {
     createTextNode:       (t) => ({ nodeType: 3, data: t }),
     createElement:        (tag) => ({ ...el, tagName: tag.toUpperCase(), className: '' }),
   };
-  global.window               = { innerWidth: 1440 };
+  global.window = {
+    innerWidth:          1440,
+    addEventListener:    () => {},
+    removeEventListener: () => {},
+    matchMedia:          () => ({ matches: false, addEventListener: () => {}, removeEventListener: () => {} }),
+    location:            { href: '' },
+    screen:              { orientation: { angle: 0 } },
+  };
   global.requestAnimationFrame = () => 0;
   global.cancelAnimationFrame  = () => {};
   global.URL                   = { createObjectURL: () => 'blob:mock', revokeObjectURL: () => {} };
   global.MediaRecorder         = class { static isTypeSupported() { return false; } };
-  global.navigator             = { mediaDevices: null };
+  global.navigator             = {
+    mediaDevices: {
+      addEventListener:    () => {},
+      removeEventListener: () => {},
+      enumerateDevices:    () => Promise.resolve([]),
+      getUserMedia:        () => Promise.reject(new Error('Mock getUserMedia error')),
+    },
+  };
+
+  const storageMock = () => {
+    let store = {};
+    return {
+      getItem:    (k) => (k in store ? store[k] : null),
+      setItem:    (k, v) => { store[k] = String(v); },
+      removeItem: (k) => { delete store[k]; },
+      clear:      () => { store = {}; },
+    };
+  };
+  global.localStorage   = storageMock();
+  global.sessionStorage = storageMock();
+  global.fetch          = () => Promise.resolve({ ok: true, json: () => Promise.resolve({}) });
 }
 
 stubDOM();

@@ -15,3 +15,6 @@ Thumbs.db
 
 # Test coverage
 coverage/
+
+# Runtime data (auto-seeded at startup)
+data/

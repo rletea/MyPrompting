@@ -41,6 +41,11 @@ function writeUsers(users) {
   fs.renameSync(tmp, USERS_FILE);
 }
 
+// Precomputed cost-12 bcrypt hash used when a user is not found, ensuring
+// bcrypt.compare always runs and execution time is constant, preventing
+// timing side-channel attacks for username enumeration.
+const DUMMY_HASH = '$2a$12$nmPPTFd86bOXYp.8fyWEc.I/mjyxOt3/N1MpbfQM3njdjl/h3A2uq';
+
 /**
  * Find a user by username (case-insensitive).
  * Returns the user object (with passwordHash) or null.
@@ -57,9 +62,9 @@ function findUser(username) {
  */
 async function verifyPassword(username, plainPassword) {
   const user = findUser(username);
-  if (!user) return null;
-  const ok = await bcrypt.compare(plainPassword, user.passwordHash);
-  if (!ok) return null;
+  const hashToCompare = user ? user.passwordHash : DUMMY_HASH;
+  const ok = await bcrypt.compare(plainPassword, hashToCompare);
+  if (!user || !ok) return null;
   return { username: user.username, role: user.role };
 }
 
@@ -70,10 +75,9 @@ async function verifyPassword(username, plainPassword) {
  */
 async function changePassword(username, currentPassword, newPassword) {
   const user = findUser(username);
-  if (!user) return false;
-
-  const ok = await bcrypt.compare(currentPassword, user.passwordHash);
-  if (!ok) return false;
+  const hashToCompare = user ? user.passwordHash : DUMMY_HASH;
+  const ok = await bcrypt.compare(currentPassword, hashToCompare);
+  if (!user || !ok) return false;
 
   const newHash = await bcrypt.hash(newPassword, SALT_ROUNDS);
 

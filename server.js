@@ -8,6 +8,7 @@ const session      = require('express-session');
 const path         = require('path');
 const fs           = require('fs');
 const bcrypt       = require('bcryptjs');
+const crypto       = require('crypto');
 
 const { verifyPassword, changePassword, savePreferences, getPreferences } = require('./auth/userStore');
 
@@ -99,21 +100,86 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
 // ---------------------------------------------------------------------------
+// Rate Limiting (Zero-dependency in-memory sliding window)
+// ---------------------------------------------------------------------------
+function createRateLimiter({ windowMs = 15 * 60 * 1000, max = 15, message = 'Too many requests. Please try again later.' }) {
+  const hits = new Map();
+
+  // Periodic cleanup every 5 minutes to prevent memory leaks
+  const cleanupTimer = setInterval(() => {
+    const now = Date.now();
+    for (const [ip, timestamps] of hits.entries()) {
+      const valid = timestamps.filter((t) => now - t < windowMs);
+      if (valid.length === 0) {
+        hits.delete(ip);
+      } else {
+        hits.set(ip, valid);
+      }
+    }
+  }, 5 * 60 * 1000);
+  if (cleanupTimer && typeof cleanupTimer.unref === 'function') {
+    cleanupTimer.unref();
+  }
+
+  return function rateLimiter(req, res, next) {
+    if (process.env.NODE_ENV === 'test') return next();
+
+    const ip = req.ip || (req.socket && req.socket.remoteAddress) || 'unknown';
+    const now = Date.now();
+    const timestamps = (hits.get(ip) || []).filter((t) => now - t < windowMs);
+
+    if (timestamps.length >= max) {
+      const oldest = timestamps[0];
+      const retryAfterSec = Math.ceil((windowMs - (now - oldest)) / 1000);
+      res.set('Retry-After', String(retryAfterSec));
+      return res.status(429).json({ error: message, retryAfter: retryAfterSec });
+    }
+
+    timestamps.push(now);
+    hits.set(ip, timestamps);
+    next();
+  };
+}
+
+const loginLimiter = createRateLimiter({
+  windowMs: 15 * 60 * 1000,
+  max: 15,
+  message: 'Too many login attempts from this IP. Please try again in 15 minutes.'
+});
+
+const changePasswordLimiter = createRateLimiter({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: 'Too many password change attempts. Please try again in 15 minutes.'
+});
+
+// ---------------------------------------------------------------------------
 // Session
 // ---------------------------------------------------------------------------
 const SESSION_SECRET = process.env.SESSION_SECRET;
-if (!SESSION_SECRET) {
-  console.warn(
-    '[WARN] SESSION_SECRET is not set. Using an insecure fallback. ' +
-    'Set SESSION_SECRET in your .env or Railway Variables before going to production.'
-  );
+let effectiveSessionSecret = SESSION_SECRET;
+
+if (!effectiveSessionSecret) {
+  if (process.env.NODE_ENV === 'production') {
+    effectiveSessionSecret = crypto.randomBytes(32).toString('hex');
+    console.warn(
+      '[CRITICAL WARNING] SESSION_SECRET is not set in production! ' +
+      'Generated an ephemeral cryptographic secret. Set SESSION_SECRET in Railway Variables for persistent sessions across redeploys.'
+    );
+  } else {
+    effectiveSessionSecret = 'change-me-insecure-fallback';
+    console.warn(
+      '[WARN] SESSION_SECRET is not set. Using an insecure fallback. ' +
+      'Set SESSION_SECRET in your .env or Railway Variables before going to production.'
+    );
+  }
 }
 
 const INACTIVITY_MS = 3 * 60 * 60 * 1000; // 3 hours — must match client-side
 
 app.use(
   session({
-    secret:            SESSION_SECRET || 'change-me-insecure-fallback',
+    secret:            effectiveSessionSecret,
     resave:            false,
     saveUninitialized: false,
     rolling:           true,   // reset cookie expiry on every response while active
@@ -150,7 +216,7 @@ app.get('/js/login.js',            (_req, res) => res.sendFile(path.join(__dirna
 app.get('/js/change-password.js',  (_req, res) => res.sendFile(path.join(__dirname, 'public', 'js', 'change-password.js')));
 
 // POST /api/login
-app.post('/api/login', async (req, res) => {
+app.post('/api/login', loginLimiter, async (req, res) => {
   const { username, password } = req.body;
 
   if (!username || !password) {
@@ -210,7 +276,7 @@ app.post('/api/preferences', (req, res) => {
 });
 
 // POST /api/change-password
-app.post('/api/change-password', async (req, res) => {
+app.post('/api/change-password', changePasswordLimiter, async (req, res) => {
   const { currentPassword, newPassword } = req.body;
   const username = req.session.user.username;
 
@@ -288,5 +354,7 @@ if (require.main === module) {
     console.error('[seed] Error during test seed:', err);
   });
 }
+
+app._createRateLimiter = createRateLimiter;
 
 module.exports = app;

@@ -142,10 +142,10 @@ async function loadScriptFile(file) {
   if (!file) return;
 
   const ext = file.name.split('.').pop().toLowerCase();
-  const ALLOWED_EXTS = ['txt', 'pdf', 'docx'];
+  const ALLOWED_EXTS = ['txt', 'md', 'pdf', 'docx'];
 
   if (!ALLOWED_EXTS.includes(ext)) {
-    showError(fileError, 'Unsupported file type. Please upload a .txt, .pdf, or .docx file.');
+    showError(fileError, 'Unsupported file type. Please upload a .txt, .md, .pdf, or .docx file.');
     return;
   }
 
@@ -155,7 +155,7 @@ async function loadScriptFile(file) {
     return;
   }
 
-  if (ext === 'txt') {
+  if (ext === 'txt' || ext === 'md') {
     try {
       const text = await readTextFile(file);
       scriptInput.value = text;
@@ -173,10 +173,13 @@ async function loadScriptFile(file) {
   }
 }
 
-// File input change → show filename
+// File input change → show filename and load immediately
 fileInput.addEventListener('change', () => {
   const file = fileInput.files[0];
   fileNameLabel.textContent = file ? truncateFilename(file.name, 20) : 'No file chosen';
+  if (file) {
+    loadScriptFile(file);
+  }
 });
 
 // "Load Script" button
@@ -201,13 +204,6 @@ btnClearScript.addEventListener('click', () => {
   showPlaceholder();
   // Also clear any active or finished video recording
   if (typeof window._clearRecording === 'function') window._clearRecording();
-});
-
-// Also load immediately when file is selected (quality-of-life)
-fileInput.addEventListener('change', () => {
-  if (fileInput.files[0]) {
-    loadScriptFile(fileInput.files[0]);
-  }
 });
 
 /* ============================================================
@@ -797,14 +793,17 @@ btnLogout.addEventListener('click', async () => {
   touchActivity();
 
   // Periodic check — if the last activity was > 3h ago, log out
-  setInterval(async () => {
+  const inactivityTimer = setInterval(async () => {
     const last = parseInt(localStorage.getItem(LAST_ACTIVE_KEY) || '0', 10);
     if (Date.now() - last >= INACTIVITY_MS) {
-      clearInterval(undefined); // stop further checks
+      clearInterval(inactivityTimer); // stop further checks
       await fetch('/api/logout', { method: 'POST' }).catch(() => {});
       window.location.href = '/login.html?reason=inactivity';
     }
   }, CHECK_INTERVAL);
+  if (inactivityTimer && typeof inactivityTimer.unref === 'function') {
+    inactivityTimer.unref();
+  }
 })();
 
 // Expose startScroll so recorder.js can trigger Play when Record is pressed

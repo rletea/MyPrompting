@@ -52,9 +52,9 @@ function loadStore(filePath) {
 
 /* ── bcrypt hash of "password123" pre-computed at cost 10 for speed ─── */
 // Generated once: bcrypt.hashSync('password123', 10)
-const HASH_PW123 = '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy';
+const HASH_PW123 = '$2a$10$ya84I4NRiBT7l0iz/tByp.BO4lRyQ6QP.Ty9rb0YUIvomNJVD4sUu';
 // Generated once: bcrypt.hashSync('hunter2', 10)
-const HASH_HUNTER2 = '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi';
+const HASH_HUNTER2 = '$2a$10$.kaL/k/SBrWiejTt/32.U.CjyFEq25s3luTKYYX5r2QaJ5ny8UD2K';
 
 /* ============================================================
    findUser
