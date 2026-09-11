@@ -173,28 +173,43 @@ html, body {
   box-shadow: 0 0 0 2px rgba(200, 160, 40, 0.12);
 }
 
+/* Disable native Edge / IE password reveal and clear buttons to avoid overlap */
+input::-ms-reveal,
+input::-ms-clear {
+  display: none !important;
+  width: 0;
+  height: 0;
+}
+
 /* Password wrapper (input + eye button) */
 .password-wrap {
   position: relative;
 }
 .password-wrap .field-input {
-  padding-right: 42px;
+  padding-right: 44px;
 }
 .btn-eye {
   position: absolute;
-  right: 10px;
+  right: 8px;
   top: 50%;
   transform: translateY(-50%);
   background: transparent;
   border: none;
   cursor: pointer;
-  color: #5a5040;
-  font-size: 1rem;
-  padding: 2px 4px;
+  color: #9a8a6a;
+  padding: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   transition: color 0.15s;
   line-height: 1;
+  z-index: 5;
 }
 .btn-eye:hover { color: #d4a930; }
+.btn-eye svg {
+  display: block;
+  pointer-events: none;
+}
 
 /* ── Error message ────────────────────────────────────────────────────── */
 .error-msg {
