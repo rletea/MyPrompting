@@ -17,19 +17,35 @@ function stubDOM() {
     style:               { setProperty: () => {}, removeProperty: () => {} },
     classList:           { toggle: () => {}, add: () => {}, remove: () => {}, contains: () => false },
     querySelectorAll:    () => [],
+    querySelector:       () => null,
     textContent:         '',
     value:               '3',
     checked:             false,
     disabled:            false,
     dataset:             {},
-    appendChild:         () => {},
+    appendChild:         function(child) {
+      if (child && child.data) this.textContent += child.data;
+    },
     src:                 '',
     download:            '',
     href:                '',
   };
+  const elements = {};
+  const getOrCreate = (id) => {
+    if (!elements[id]) {
+      elements[id] = {
+        ...el,
+        id,
+        style: { setProperty: () => {}, removeProperty: () => {} },
+        classList: { toggle: () => {}, add: () => {}, remove: () => {}, contains: () => false }
+      };
+    }
+    return elements[id];
+  };
   global.document = {
-    getElementById:       () => ({ ...el }),
+    getElementById:       (id) => getOrCreate(id),
     querySelectorAll:     () => [],
+    querySelector:        () => null,
     addEventListener:     () => {},
     activeElement:        { tagName: 'BODY' },
     fullscreenElement:    null,
@@ -75,8 +91,18 @@ function stubDOM() {
 stubDOM();
 
 // Require modules after DOM stubs are in place
-const { pixelsPerTick, truncateFilename } =
-  require('../public/js/app');
+const {
+  pixelsPerTick,
+  truncateFilename,
+  startScroll,
+  pauseScroll,
+  stopScroll,
+  displayScript,
+  showPlaceholder,
+  abortCountdown,
+  handlePrompterClick,
+  getPlaybackState,
+} = require('../public/js/app');
 
 const { mimeExtension, formatBytes, buildPermissionErrorMessage, buildFilename } =
   require('../public/js/recorder');
@@ -282,6 +308,147 @@ describe('buildPermissionErrorMessage', () => {
   test('handles null input without throwing', () => {
     const msg = buildPermissionErrorMessage(null);
     expect(typeof msg).toBe('string');
+  });
+});
+
+/* ============================================================
+   Playback & Countdown Lifecycle Tests
+   ============================================================ */
+describe('Playback & Countdown Lifecycle', () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+    stopScroll();
+  });
+
+  afterEach(() => {
+    jest.clearAllTimers();
+    jest.useRealTimers();
+  });
+
+  test('displayScript loads text and arms countdown (needsCountdown = true)', () => {
+    displayScript('Sample script text');
+    const state = getPlaybackState();
+    expect(state.isPlaying).toBe(false);
+    expect(state.needsCountdown).toBe(true);
+    expect(state.countdownTimer).toBe(false);
+  });
+
+  test('startScroll runs 3-2-1 countdown then starts scrolling (needsCountdown becomes false, countdownTimer becomes null)', () => {
+    displayScript('Sample script text');
+    startScroll();
+
+    // In-flight countdown
+    expect(getPlaybackState().countdownTimer).toBe(true);
+    expect(getPlaybackState().isPlaying).toBe(false);
+
+    // Fast-forward through step 3, 2, 1 (1s + 1s + 1s + 900ms)
+    jest.advanceTimersByTime(3900);
+
+    const state = getPlaybackState();
+    expect(state.isPlaying).toBe(true);
+    expect(state.needsCountdown).toBe(false);
+    expect(state.countdownTimer).toBe(false); // countdownTimer must be cleared!
+  });
+
+  test('pauseScroll pauses scrolling without re-arming countdown', () => {
+    displayScript('Sample script text');
+    startScroll();
+    jest.advanceTimersByTime(3900); // playing now
+
+    pauseScroll();
+    const pausedState = getPlaybackState();
+    expect(pausedState.isPlaying).toBe(false);
+    expect(pausedState.needsCountdown).toBe(false);
+    expect(pausedState.countdownTimer).toBe(false);
+  });
+
+  test('startScroll while paused resumes instantly without countdown', () => {
+    displayScript('Sample script text');
+    startScroll();
+    jest.advanceTimersByTime(3900); // playing
+
+    pauseScroll();
+    expect(getPlaybackState().isPlaying).toBe(false);
+
+    // Resume
+    startScroll();
+    const resumedState = getPlaybackState();
+    expect(resumedState.isPlaying).toBe(true);
+    expect(resumedState.needsCountdown).toBe(false);
+    expect(resumedState.countdownTimer).toBe(false);
+  });
+
+  test('stopScroll stops scrolling and re-arms countdown (needsCountdown = true)', () => {
+    displayScript('Sample script text');
+    startScroll();
+    jest.advanceTimersByTime(3900); // playing
+
+    stopScroll();
+    const stoppedState = getPlaybackState();
+    expect(stoppedState.isPlaying).toBe(false);
+    expect(stoppedState.needsCountdown).toBe(true);
+  });
+
+  test('loading new script re-arms countdown', () => {
+    displayScript('First script');
+    startScroll();
+    jest.advanceTimersByTime(3900); // playing
+
+    pauseScroll();
+    expect(getPlaybackState().needsCountdown).toBe(false);
+
+    // Load new text
+    displayScript('Second script');
+    expect(getPlaybackState().needsCountdown).toBe(true);
+  });
+
+  test('pausing while countdown is in flight aborts it and keeps countdown armed', () => {
+    displayScript('Sample script text');
+    startScroll();
+    expect(getPlaybackState().countdownTimer).toBe(true);
+
+    // Pause during countdown (e.g. at count 2)
+    jest.advanceTimersByTime(1500);
+    pauseScroll();
+
+    const abortedState = getPlaybackState();
+    expect(abortedState.isPlaying).toBe(false);
+    expect(abortedState.countdownTimer).toBe(false);
+    expect(abortedState.needsCountdown).toBe(true);
+  });
+
+  test('clicking prompter display toggles between play, pause, and instant resume', () => {
+    displayScript('Clickable prompter script');
+
+    // 1. Initial click when stopped: triggers 3-2-1 countdown
+    handlePrompterClick();
+    expect(getPlaybackState().countdownTimer).toBe(true);
+    expect(getPlaybackState().isPlaying).toBe(false);
+
+    // Fast-forward countdown
+    jest.advanceTimersByTime(3900);
+    expect(getPlaybackState().isPlaying).toBe(true);
+    expect(getPlaybackState().needsCountdown).toBe(false);
+
+    // 2. Click while playing: pauses scroll without re-arming countdown
+    handlePrompterClick();
+    expect(getPlaybackState().isPlaying).toBe(false);
+    expect(getPlaybackState().needsCountdown).toBe(false);
+
+    // 3. Click while paused: resumes immediately without countdown
+    handlePrompterClick();
+    expect(getPlaybackState().isPlaying).toBe(true);
+    expect(getPlaybackState().needsCountdown).toBe(false);
+    expect(getPlaybackState().countdownTimer).toBe(false);
+
+    // 4. Click Stop: resets and re-arms countdown
+    stopScroll();
+    expect(getPlaybackState().needsCountdown).toBe(true);
+
+    // 5. Next click starts with countdown again
+    handlePrompterClick();
+    expect(getPlaybackState().countdownTimer).toBe(true);
+    expect(getPlaybackState().isPlaying).toBe(false);
   });
 });
 

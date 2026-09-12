@@ -23,60 +23,60 @@
 /* ============================================================
    DOM references
    ============================================================ */
-const scriptInput      = document.getElementById('script-input');
-const fileInput        = document.getElementById('file-input');
-const fileNameLabel    = document.getElementById('file-name');
-const btnLoadScript    = document.getElementById('btn-load-script');
-const btnClearScript   = document.getElementById('btn-clear-script');
-const fileError        = document.getElementById('file-error');
+const scriptInput = document.getElementById('script-input');
+const fileInput = document.getElementById('file-input');
+const fileNameLabel = document.getElementById('file-name');
+const btnLoadScript = document.getElementById('btn-load-script');
+const btnClearScript = document.getElementById('btn-clear-script');
+const fileError = document.getElementById('file-error');
 
-const btnPlay          = document.getElementById('btn-play');
-const btnPause         = document.getElementById('btn-pause');
-const btnStop          = document.getElementById('btn-stop');
-const speedSlider      = document.getElementById('speed-slider');
-const speedValue       = document.getElementById('speed-value');
+const btnPlay = document.getElementById('btn-play');
+const btnPause = document.getElementById('btn-pause');
+const btnStop = document.getElementById('btn-stop');
+const speedSlider = document.getElementById('speed-slider');
+const speedValue = document.getElementById('speed-value');
 
-const presetColors     = document.querySelectorAll('.preset-color');
-const bgImageInput     = document.getElementById('bg-image-input');
-const btnClearBgImage  = document.getElementById('btn-clear-bg-image');
-const bgImageError     = document.getElementById('bg-image-error');
+const presetColors = document.querySelectorAll('.preset-color');
+const bgImageInput = document.getElementById('bg-image-input');
+const btnClearBgImage = document.getElementById('btn-clear-bg-image');
+const bgImageError = document.getElementById('bg-image-error');
 
 const fontFamilySelect = document.getElementById('font-family-select');
-const fontSizeSlider   = document.getElementById('font-size-slider');
-const fontSizeValue    = document.getElementById('font-size-value');
-const textColorInput   = document.getElementById('text-color-input');
-const lineWidthSlider  = document.getElementById('line-width-slider');
-const lineWidthValue   = document.getElementById('line-width-value');
+const fontSizeSlider = document.getElementById('font-size-slider');
+const fontSizeValue = document.getElementById('font-size-value');
+const textColorInput = document.getElementById('text-color-input');
+const lineWidthSlider = document.getElementById('line-width-slider');
+const lineWidthValue = document.getElementById('line-width-value');
 
-const mirrorToggle     = document.getElementById('mirror-toggle');
+const mirrorToggle = document.getElementById('mirror-toggle');
 
-const userBarName      = document.getElementById('user-bar-name');
-const btnLogout        = document.getElementById('btn-logout');
+const userBarName = document.getElementById('user-bar-name');
+const btnLogout = document.getElementById('btn-logout');
 
-const btnFullscreen    = document.getElementById('btn-fullscreen');
-const fsOverlay        = document.getElementById('fullscreen-overlay');
-const fsBtnPlay        = document.getElementById('fs-btn-play');
-const fsBtnPause       = document.getElementById('fs-btn-pause');
-const fsBtnStop        = document.getElementById('fs-btn-stop');
-const fsSpeedSlider    = document.getElementById('fs-speed-slider');
+const btnFullscreen = document.getElementById('btn-fullscreen');
+const fsOverlay = document.getElementById('fullscreen-overlay');
+const fsBtnPlay = document.getElementById('fs-btn-play');
+const fsBtnPause = document.getElementById('fs-btn-pause');
+const fsBtnStop = document.getElementById('fs-btn-stop');
+const fsSpeedSlider = document.getElementById('fs-speed-slider');
 const btnExitFullscreen = document.getElementById('btn-exit-fullscreen');
 
-const btnTogglePanel   = document.getElementById('btn-toggle-panel');
-const controlPanel     = document.getElementById('control-panel');
+const btnTogglePanel = document.getElementById('btn-toggle-panel');
+const controlPanel = document.getElementById('control-panel');
 
 const prompterContainer = document.getElementById('prompter-container');
-const prompterText      = document.getElementById('prompter-text');
+const prompterText = document.getElementById('prompter-text');
 
 /* ============================================================
    State
    ============================================================ */
-let scrollRAF        = null;   // requestAnimationFrame handle
-let isPlaying        = false;
-let bgObjectUrl      = null;   // blob URL for uploaded background image
+let scrollRAF = null;   // requestAnimationFrame handle
+let isPlaying = false;
+let bgObjectUrl = null;   // blob URL for uploaded background image
 let countdownAborted = false;  // set true to cancel an in-progress countdown
-let countdownTimer   = null;   // setTimeout handle for countdown steps
-let scrollAccum      = 0;      // fractional pixel accumulator — prevents sub-pixel stall
-let needsCountdown   = true;   // true = next Play shows 3-2-1; false = resume instantly
+let countdownTimer = null;   // setTimeout handle for countdown steps
+let scrollAccum = 0;      // fractional pixel accumulator — prevents sub-pixel stall
+let needsCountdown = true;   // true = next Play shows 3-2-1; false = resume instantly
 
 /**
  * Pixels scrolled per animation frame — derived from slider value (0, 0.5, 1 … 10).
@@ -108,6 +108,7 @@ function displayScript(text) {
   const el = document.createTextNode(text);
   prompterText.appendChild(el);
   stopScroll();
+  needsCountdown = true;
   prompterContainer.scrollTop = 0;
   clearError(fileError);
 }
@@ -119,6 +120,7 @@ function showPlaceholder() {
   p.className = 'placeholder-msg';
   p.textContent = 'Your script will appear here. Paste text or load a file in the panel →';
   prompterText.appendChild(p);
+  needsCountdown = true;
 }
 
 /**
@@ -129,8 +131,8 @@ function showPlaceholder() {
 function readTextFile(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    reader.onload  = (e) => resolve(e.target.result);
-    reader.onerror = ()  => reject(new Error('Could not read file.'));
+    reader.onload = (e) => resolve(e.target.result);
+    reader.onerror = () => reject(new Error('Could not read file.'));
     reader.readAsText(file, 'UTF-8');
   });
 }
@@ -196,8 +198,8 @@ btnLoadScript.addEventListener('click', () => {
 
 // "Clear Script" button — clears textarea, file input, prompter display, errors, and recording
 btnClearScript.addEventListener('click', () => {
-  scriptInput.value         = '';
-  fileInput.value           = '';
+  scriptInput.value = '';
+  fileInput.value = '';
   fileNameLabel.textContent = 'No file chosen';
   clearError(fileError);
   stopScroll();
@@ -215,16 +217,20 @@ btnClearScript.addEventListener('click', () => {
    ─────────────────────────────────────────────────────────────────────── */
 function runCountdown(onDone) {
   const overlay = document.getElementById('countdown-overlay');
-  const numEl   = document.getElementById('countdown-number');
-  const steps   = [3, 2, 1];
+  const numEl = document.getElementById('countdown-number');
+  const steps = [3, 2, 1];
 
   overlay.classList.remove('hidden');
   let i = 0;
 
   function showStep() {
-    if (countdownAborted) { hideCountdown(); return; }
+    if (countdownAborted) {
+      countdownTimer = null;
+      hideCountdown();
+      return;
+    }
 
-    numEl.className   = '';
+    numEl.className = '';
     numEl.textContent = steps[i];
     // Force CSS animation restart via reflow
     numEl.style.animation = 'none';
@@ -237,6 +243,7 @@ function runCountdown(onDone) {
     } else {
       // After "1" wait for its animation to finish then go
       countdownTimer = setTimeout(() => {
+        countdownTimer = null;
         hideCountdown();
         if (!countdownAborted) onDone();
       }, 900);
@@ -260,11 +267,11 @@ function abortCountdown() {
 
 /* ── Scroll engine ──────────────────────────────────────────────────── */
 function beginScrolling() {
-  isPlaying   = true;
+  isPlaying = true;
   scrollAccum = 0;
-  btnPlay.disabled    = true;
-  btnPause.disabled   = false;
-  fsBtnPlay.disabled  = true;
+  btnPlay.disabled = true;
+  btnPause.disabled = false;
+  fsBtnPlay.disabled = true;
   fsBtnPause.disabled = false;
   updatePrompterCursor();
   // Portrait mobile: hide controls so full prompter is visible while scrolling
@@ -272,7 +279,7 @@ function beginScrolling() {
 
   function tick() {
     scrollAccum += pixelsPerTick(speedSlider.value);
-    const whole  = Math.floor(scrollAccum);
+    const whole = Math.floor(scrollAccum);
     if (whole >= 1) {
       prompterContainer.scrollTop += whole;
       scrollAccum -= whole;
@@ -293,7 +300,7 @@ function beginScrolling() {
  *   • If needsCountdown is false → resume instantly (coming from Pause)
  */
 function startScroll() {
-  if (isPlaying || countdownTimer) return;
+  if (isPlaying || countdownTimer || btnPlay.disabled) return;
 
   // Change 1: Guard — require a real script to be loaded
   const hasScript = prompterText.querySelector('.placeholder-msg') === null &&
@@ -303,9 +310,7 @@ function startScroll() {
     return;
   }
 
-  // CRITICAL FIX: Reset countdownAborted so the countdown can run.
-  // Previously, stopScroll() / displayScript() called abortCountdown() which left
-  // countdownAborted = true, blocking launchCountdown() when recording was enabled.
+  // Reset countdownAborted so the countdown can run.
   countdownAborted = false;
 
   btnPlay.disabled    = true;
@@ -354,25 +359,26 @@ function startScroll() {
  * pauseScroll — immediately pauses; does NOT trigger countdown on resume.
  */
 function pauseScroll() {
-  // If countdown is running, abort it and go back to ready state
-  if (!isPlaying && countdownTimer) {
-    abortCountdown();
-    needsCountdown = true;   // re-arm so next Play shows countdown again
-    btnPlay.disabled    = false;
-    btnPause.disabled   = true;
-    fsBtnPlay.disabled  = false;
-    fsBtnPause.disabled = true;
-    updatePrompterCursor();
+  // If countdown or camera-start is running, abort it and return to ready state
+  if (!isPlaying) {
+    if (countdownTimer || btnPlay.disabled) {
+      abortCountdown();
+      needsCountdown = true;   // aborting before scrolling started keeps countdown armed for next Play
+      btnPlay.disabled    = false;
+      btnPause.disabled   = true;
+      fsBtnPlay.disabled  = false;
+      fsBtnPause.disabled = true;
+      updatePrompterCursor();
+    }
     return;
   }
-  if (!isPlaying) return;
   isPlaying = false;
   cancelAnimationFrame(scrollRAF);
-  scrollRAF      = null;
+  scrollRAF = null;
   needsCountdown = false;   // resume will be instant — no countdown
-  btnPlay.disabled    = false;
-  btnPause.disabled   = true;
-  fsBtnPlay.disabled  = false;
+  btnPlay.disabled = false;
+  btnPause.disabled = true;
+  fsBtnPlay.disabled = false;
   fsBtnPause.disabled = true;
   updatePrompterCursor();
 }
@@ -387,9 +393,9 @@ function stopScroll() {
   scrollRAF = null;
   prompterContainer.scrollTop = 0;
   needsCountdown = true;    // next Play must show countdown
-  btnPlay.disabled    = false;
-  btnPause.disabled   = true;
-  fsBtnPlay.disabled  = false;
+  btnPlay.disabled = false;
+  btnPause.disabled = true;
+  fsBtnPlay.disabled = false;
   fsBtnPause.disabled = true;
   updatePrompterCursor();
 
@@ -403,9 +409,9 @@ function updatePrompterCursor() {
   prompterContainer.style.cursor = isPlaying ? 'pause' : 'pointer';
 }
 
-btnPlay.addEventListener('click',  startScroll);
+btnPlay.addEventListener('click', startScroll);
 btnPause.addEventListener('click', pauseScroll);
-btnStop.addEventListener('click',  stopScroll);
+btnStop.addEventListener('click', stopScroll);
 
 // Change 4: persist speed to server (debounced — fire 500 ms after last change)
 let _speedSaveTimer = null;
@@ -416,7 +422,7 @@ function persistSpeed(value) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ speed: parseFloat(value) }),
-    }).catch(() => {}); // best-effort; ignore network errors
+    }).catch(() => { }); // best-effort; ignore network errors
   }, 500);
 }
 
@@ -558,15 +564,15 @@ mirrorToggle.addEventListener('change', () => {
 
 function enterFullscreen() {
   const el = document.getElementById('prompter-wrapper') || prompterContainer;
-  if (el.requestFullscreen)            el.requestFullscreen();
+  if (el.requestFullscreen) el.requestFullscreen();
   else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
-  else if (el.mozRequestFullScreen)    el.mozRequestFullScreen();
+  else if (el.mozRequestFullScreen) el.mozRequestFullScreen();
 }
 
 function exitFullscreen() {
-  if (document.exitFullscreen)            document.exitFullscreen();
+  if (document.exitFullscreen) document.exitFullscreen();
   else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
-  else if (document.mozCancelFullScreen)  document.mozCancelFullScreen();
+  else if (document.mozCancelFullScreen) document.mozCancelFullScreen();
 }
 
 function isFullscreenActive() {
@@ -580,9 +586,9 @@ function isFullscreenActive() {
 btnFullscreen.addEventListener('click', enterFullscreen);
 btnExitFullscreen.addEventListener('click', exitFullscreen);
 
-document.addEventListener('fullscreenchange',       onFullscreenChange);
+document.addEventListener('fullscreenchange', onFullscreenChange);
 document.addEventListener('webkitfullscreenchange', onFullscreenChange);
-document.addEventListener('mozfullscreenchange',    onFullscreenChange);
+document.addEventListener('mozfullscreenchange', onFullscreenChange);
 
 function onFullscreenChange() {
   if (isFullscreenActive()) {
@@ -595,9 +601,9 @@ function onFullscreenChange() {
 }
 
 // Fullscreen overlay playback controls
-fsBtnPlay.addEventListener('click',  startScroll);
+fsBtnPlay.addEventListener('click', startScroll);
 fsBtnPause.addEventListener('click', pauseScroll);
-fsBtnStop.addEventListener('click',  stopScroll);
+fsBtnStop.addEventListener('click', stopScroll);
 
 fsSpeedSlider.addEventListener('input', () => {
   speedSlider.value = fsSpeedSlider.value;
@@ -708,16 +714,15 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
-/* ============================================================
-   CLICK-TO-PLAY / CLICK-TO-PAUSE on the prompter display
-   ============================================================ */
-prompterContainer.addEventListener('click', () => {
-  if (countdownTimer) {
+function handlePrompterClick() {
+  if (countdownTimer || (!isPlaying && btnPlay.disabled)) {
     pauseScroll();
     return;
   }
   isPlaying ? pauseScroll() : startScroll();
-});
+}
+
+prompterContainer.addEventListener('click', handlePrompterClick);
 
 /* ============================================================
    HELPER UTILITIES
@@ -759,13 +764,13 @@ function truncateFilename(name, maxLen) {
       if (savedSpeed !== null) {
         const v = parseFloat(savedSpeed);
         if (!isNaN(v) && v >= 0 && v <= 10) {
-          speedSlider.value   = v;
+          speedSlider.value = v;
           fsSpeedSlider.value = v;
           speedValue.textContent = v % 1 === 0 ? v : v.toFixed(1);
         }
       }
     })
-    .catch(() => {}); // session expired — server redirects on next navigation
+    .catch(() => { }); // session expired — server redirects on next navigation
 })();
 
 // ── Logout ──────────────────────────────────────────────────────────────
@@ -780,9 +785,9 @@ btnLogout.addEventListener('click', async () => {
    — 3h inactivity      → client-side timer + server maxAge both enforce this
    ============================================================ */
 (function initSessionGuard() {
-  const INACTIVITY_MS   = 3 * 60 * 60 * 1000; // 3 hours
-  const CHECK_INTERVAL  = 60 * 1000;           // check every 60 s
-  const SESSION_KEY     = 'tp_tab_alive';
+  const INACTIVITY_MS = 3 * 60 * 60 * 1000; // 3 hours
+  const CHECK_INTERVAL = 60 * 1000;           // check every 60 s
+  const SESSION_KEY = 'tp_tab_alive';
   const LAST_ACTIVE_KEY = 'tp_last_active';
 
   // ── Tab-alive flag ──────────────────────────────────────────────────
@@ -810,7 +815,7 @@ btnLogout.addEventListener('click', async () => {
     const last = parseInt(localStorage.getItem(LAST_ACTIVE_KEY) || '0', 10);
     if (Date.now() - last >= INACTIVITY_MS) {
       clearInterval(inactivityTimer); // stop further checks
-      await fetch('/api/logout', { method: 'POST' }).catch(() => {});
+      await fetch('/api/logout', { method: 'POST' }).catch(() => { });
       window.location.href = '/login.html?reason=inactivity';
     }
   }, CHECK_INTERVAL);
@@ -826,5 +831,22 @@ window._startScroll = startScroll;
    MODULE EXPORT (for tests in Node.js environment)
    ============================================================ */
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { pixelsPerTick, truncateFilename };
+  module.exports = {
+    pixelsPerTick,
+    truncateFilename,
+    startScroll,
+    pauseScroll,
+    stopScroll,
+    displayScript,
+    showPlaceholder,
+    runCountdown,
+    abortCountdown,
+    handlePrompterClick,
+    getPlaybackState: () => ({
+      isPlaying,
+      needsCountdown,
+      countdownAborted,
+      countdownTimer: !!countdownTimer,
+    }),
+  };
 }
