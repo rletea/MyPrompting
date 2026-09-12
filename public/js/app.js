@@ -293,7 +293,7 @@ function beginScrolling() {
  *   • If needsCountdown is false → resume instantly (coming from Pause)
  */
 function startScroll() {
-  if (isPlaying) return;
+  if (isPlaying || countdownTimer) return;
 
   // Change 1: Guard — require a real script to be loaded
   const hasScript = prompterText.querySelector('.placeholder-msg') === null &&
@@ -302,6 +302,11 @@ function startScroll() {
     showError(fileError, 'Please paste or load a text before starting.');
     return;
   }
+
+  // CRITICAL FIX: Reset countdownAborted so the countdown can run.
+  // Previously, stopScroll() / displayScript() called abortCountdown() which left
+  // countdownAborted = true, blocking launchCountdown() when recording was enabled.
+  countdownAborted = false;
 
   btnPlay.disabled    = true;
   fsBtnPlay.disabled  = true;
@@ -331,11 +336,15 @@ function startScroll() {
   };
 
   if (useRecording) {
-    // Await camera open; _startRecording calls btnStop on failure so
-    // countdownAborted will be true if something goes wrong.
-    window._startRecording().then(() => {
-      if (!countdownAborted) launchCountdown();
-    });
+    // Await camera open / record start; then launch countdown
+    window._startRecording()
+      .then(() => {
+        if (!countdownAborted) launchCountdown();
+      })
+      .catch((err) => {
+        console.error('[recorder] Recording start failed:', err);
+        if (!countdownAborted) launchCountdown();
+      });
   } else {
     launchCountdown();
   }
@@ -548,8 +557,8 @@ mirrorToggle.addEventListener('change', () => {
    ============================================================ */
 
 function enterFullscreen() {
-  const el = prompterContainer;
-  if (el.requestFullscreen)         el.requestFullscreen();
+  const el = document.getElementById('prompter-wrapper') || prompterContainer;
+  if (el.requestFullscreen)            el.requestFullscreen();
   else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
   else if (el.mozRequestFullScreen)    el.mozRequestFullScreen();
 }
@@ -703,6 +712,10 @@ document.addEventListener('keydown', (e) => {
    CLICK-TO-PLAY / CLICK-TO-PAUSE on the prompter display
    ============================================================ */
 prompterContainer.addEventListener('click', () => {
+  if (countdownTimer) {
+    pauseScroll();
+    return;
+  }
   isPlaying ? pauseScroll() : startScroll();
 });
 

@@ -39,6 +39,17 @@
   const cameraSelect      = document.getElementById('camera-select');
   const facingToggle      = document.getElementById('camera-facing-toggle');
   const prompterContainer = document.getElementById('prompter-container');
+  const prompterWrapper   = document.getElementById('prompter-wrapper');
+
+  function setPipActive(active) {
+    if (active) {
+      if (prompterContainer) prompterContainer.classList.add('pip-active');
+      if (prompterWrapper)   prompterWrapper.classList.add('pip-active');
+    } else {
+      if (prompterContainer) prompterContainer.classList.remove('pip-active');
+      if (prompterWrapper)   prompterWrapper.classList.remove('pip-active');
+    }
+  }
 
   /* ------------------------------------------------------------------
      State
@@ -185,7 +196,7 @@
     recPreview.srcObject = stream;
     recPreview.classList.remove('hidden');
     recPreview.classList.remove('recording');   // no red border until record starts
-    prompterContainer.classList.add('pip-active');
+    setPipActive(true);
 
     setRecStatus('Camera ready — press Play to record.');
   }
@@ -200,7 +211,7 @@
     recPreview.srcObject = null;
     recPreview.classList.add('hidden');
     recPreview.classList.remove('recording');
-    prompterContainer.classList.remove('pip-active');
+    setPipActive(false);
     setRecStatus('');
   }
 
@@ -236,7 +247,7 @@
 
       recPreview.srcObject = stream;
       recPreview.classList.remove('hidden');
-      prompterContainer.classList.add('pip-active');
+      setPipActive(true);
     }
 
     // Stream is live — hide any previous playback UI
@@ -269,7 +280,7 @@
       activeStream = null;
       recPreview.classList.add('hidden');
       recPreview.classList.remove('recording');
-      prompterContainer.classList.remove('pip-active');
+      setPipActive(false);
       return;
     }
 
@@ -285,7 +296,7 @@
       recPreview.srcObject = null;
       recPreview.classList.add('hidden');
       recPreview.classList.remove('recording');
-      prompterContainer.classList.remove('pip-active');
+      setPipActive(false);
 
       const finalMime      = mediaRecorder.mimeType || mimeType || 'video/webm';
       const blob           = new Blob(videoChunks, { type: finalMime });
@@ -314,7 +325,7 @@
       activeStream = null;
       recPreview.classList.add('hidden');
       recPreview.classList.remove('recording');
-      prompterContainer.classList.remove('pip-active');
+      setPipActive(false);
     };
 
     mediaRecorder.start(250);
@@ -447,7 +458,7 @@
     recPreview.src       = '';
     recPreview.classList.add('hidden');
     recPreview.classList.remove('recording');
-    prompterContainer.classList.remove('pip-active');
+    setPipActive(false);
     recPlayback.src = '';
     recPlayback.classList.add('hidden');
     recDownload.href     = '';

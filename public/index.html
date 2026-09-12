@@ -230,38 +230,41 @@
 <!-- =========================================================
      PROMPTER DISPLAY
      ========================================================= -->
-<main id="prompter-container" aria-label="Teleprompter display" tabindex="0">
+<div id="prompter-wrapper">
 
-  <!-- PiP camera preview — floats centered at top of prompter while recording -->
+  <!-- PiP camera preview — stays at a fixed point at top of prompter viewport -->
   <video id="rec-preview"
     class="pip-preview hidden"
     autoplay muted playsinline
     aria-label="Camera preview">
   </video>
 
-  <div id="prompter-text-wrap">
-    <div id="prompter-text" aria-live="polite" aria-label="Prompter text">
-      <p class="placeholder-msg">Your script will appear here. Paste text or load a file in the panel →</p>
+  <main id="prompter-container" aria-label="Teleprompter display" tabindex="0">
+    <div id="prompter-text-wrap">
+      <div id="prompter-text" aria-live="polite" aria-label="Prompter text">
+        <p class="placeholder-msg">Your script will appear here. Paste text or load a file in the panel →</p>
+      </div>
     </div>
+  </main>
+
+  <!-- =========================================================
+       COUNTDOWN OVERLAY
+       ========================================================= -->
+  <div id="countdown-overlay" class="hidden" aria-live="assertive" aria-atomic="true">
+    <span id="countdown-number"></span>
   </div>
-</main>
 
-<!-- =========================================================
-     COUNTDOWN OVERLAY
-     ========================================================= -->
-<div id="countdown-overlay" class="hidden" aria-live="assertive" aria-atomic="true">
-  <span id="countdown-number"></span>
-</div>
+  <!-- =========================================================
+       FULLSCREEN CONTROLS OVERLAY
+       ========================================================= -->
+  <div id="fullscreen-overlay" class="hidden" role="region" aria-label="Fullscreen controls">
+    <button id="fs-btn-play"  class="fs-btn" aria-label="Play">&#9654;</button>
+    <button id="fs-btn-pause" class="fs-btn" aria-label="Pause" disabled>&#9646;&#9646;</button>
+    <button id="fs-btn-stop"  class="fs-btn" aria-label="Stop">&#9646;</button>
+    <input  id="fs-speed-slider" type="range" min="0" max="10" value="1" step="0.5" aria-label="Speed" class="fs-speed" />
+    <button id="btn-exit-fullscreen" class="fs-btn" aria-label="Exit fullscreen">&#10006;</button>
+  </div>
 
-<!-- =========================================================
-     FULLSCREEN CONTROLS OVERLAY
-     ========================================================= -->
-<div id="fullscreen-overlay" class="hidden" role="region" aria-label="Fullscreen controls">
-  <button id="fs-btn-play"  class="fs-btn" aria-label="Play">&#9654;</button>
-  <button id="fs-btn-pause" class="fs-btn" aria-label="Pause" disabled>&#9646;&#9646;</button>
-  <button id="fs-btn-stop"  class="fs-btn" aria-label="Stop">&#9646;</button>
-  <input  id="fs-speed-slider" type="range" min="0" max="10" value="1" step="0.5" aria-label="Speed" class="fs-speed" />
-  <button id="btn-exit-fullscreen" class="fs-btn" aria-label="Exit fullscreen">&#10006;</button>
 </div>
 
 <script src="js/recorder.js"></script>
